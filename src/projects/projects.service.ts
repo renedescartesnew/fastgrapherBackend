@@ -1,4 +1,3 @@
-
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -96,15 +95,15 @@ export class ProjectsService {
     return deletedProject;
   }
 
-  async addPhoto(id: string, photoData: any, userId: string): Promise<any> {
+  async addPhoto(id: string, photoData: any, userId: string, projectName: string): Promise<any> {
     this.logger.log(`Adding photo to project ${id} for user ${userId}`);
     this.logger.log(`Photo data received:`, JSON.stringify(photoData));
     
     const project = await this.findOne(id, userId);
     this.logger.log(`Project found for photo upload`);
     
-    // Create photo in photos collection
-    const newPhoto = await this.photosService.create(photoData, id, userId);
+    // Create photo in photos collection with project name
+    const newPhoto = await this.photosService.create(photoData, id, userId, projectName);
     this.logger.log(`Photo created in photos collection:`, newPhoto._id);
     
     // Return updated project with photos

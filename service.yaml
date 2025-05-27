@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         # - image: gcr.io/YOUR_PROJECT_ID/nestjs-app:latest
-        - image: gcr.io/fastgrapher-460722/nestjs-app:latest
+        - image: gcr.io/fastgrapherbackend/nestjs-app:latest
           name: nestjs-app-container
           ports:
             - containerPort: 8080

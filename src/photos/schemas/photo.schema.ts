@@ -1,6 +1,5 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type PhotoDocument = Photo & Document;
 
@@ -18,23 +17,29 @@ export class Photo {
   @Prop({ required: true })
   mimetype: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   size: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
-  project: Types.ObjectId;
+  @Prop({ type: String, ref: 'Project', required: true })
+  project: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: Types.ObjectId;
+  @Prop({ type: String, ref: 'User', required: true })
+  user: string;
 
   @Prop({ default: false })
   hasClosedEyes: boolean;
 
-  @Prop()
-  createdAt: Date;
+  @Prop({ default: false })
+  notLookingAtCamera: boolean;
 
-  @Prop()
-  updatedAt: Date;
+  @Prop({ default: null })
+  notLookingPath: string;
+
+  @Prop({ default: false })
+  isGroupPhoto: boolean;
+
+  @Prop({ default: null })
+  groupsPath: string;
 }
 
 export const PhotoSchema = SchemaFactory.createForClass(Photo);
