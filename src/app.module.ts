@@ -17,91 +17,28 @@ import { PhotosModule } from './photos/photos.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const uri = configService.get<string>('MONGO_URI');
-        
-        if (!uri) {
-          console.warn('⚠️  MONGO_URI not provided. Database features will be disabled.');
-          // Return a mock configuration that won't actually connect
-          return {
-            uri: 'mongodb://localhost:27017/mock',
-            connectionFactory: () => {
-              console.log('Mock MongoDB connection - no actual database');
-              return null;
-            },
-          };
-        }
-        
-        console.log('Connecting to MongoDB:', uri?.replace(/\/\/.*@/, '//***:***@'));
-        return {
-          uri,
-          dbName: 'fastgrapher',
-          retryWrites: true,
-          retryReads: true,
-          maxPoolSize: 10,
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 45000,
-        };
-      },
-      inject: [ConfigService],
-    }),
+    MongooseModule.forRoot(
+      'mongodb+srv://NarekBrc:Halabyan_brc@breakroomcupcluster.uudts.mongodb.net/fastgrapher?retryWrites=true&w=majority&appName=breakRoomCupCluster',
+    ),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         // Calculate the correct templates path
-        const templatesPath = join(__dirname, '..', 'src', 'templates');
+        const templatesPath = join(__dirname, 'templates');
         console.log('Email templates path:', templatesPath);
-        
-        const mailHost = configService.get('MAIL_HOST');
-        const mailUser = configService.get('MAIL_USER');
-        const mailPass = configService.get('MAIL_PASS');
-        
-        // If email credentials are not configured, use a dummy configuration
-        if (!mailHost || !mailUser || !mailPass) {
-          console.warn('⚠️  Email configuration is incomplete. Email sending will be disabled.');
-          return {
-            transport: {
-              streamTransport: true,
-              newline: 'unix',
-              buffer: true,
-            },
-            defaults: {
-              from: 'noreply@fastgrapher.com',
-            },
-            template: {
-              dir: templatesPath,
-              adapter: new HandlebarsAdapter(),
-              options: {
-                strict: true,
-              },
-            },
-            options: {
-              partials: {
-                dir: templatesPath,
-                options: {
-                  strict: true,
-                },
-              },
-            },
-            preview: false,
-            verifyTransporter: false, // Disable transporter verification
-          };
-        }
         
         return {
           transport: {
-            host: mailHost,
-            port: configService.get('MAIL_PORT'),
-            secure: configService.get('MAIL_SECURE') === 'true',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
             auth: {
-              user: mailUser,
-              pass: mailPass,
+              user: 'your-email@gmail.com',
+              pass: 'your-app-password',
             },
           },
           defaults: {
-            from: configService.get('MAIL_FROM'),
+            from: 'noreply@fastgrapher.com',
           },
           template: {
             dir: templatesPath,
@@ -110,6 +47,8 @@ import { PhotosModule } from './photos/photos.module';
               strict: true,
             },
           },
+          preview: false,
+          verifyTransporter: false, // Disable transporter verification to avoid the error
         };
       },
       inject: [ConfigService],

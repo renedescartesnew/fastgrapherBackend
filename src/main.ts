@@ -11,19 +11,8 @@ async function bootstrap() {
     console.log('=== Starting FastGrapher Backend ===');
     console.log('Node.js version:', process.version);
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('Available environment variables:', {
-      PORT: process.env.PORT,
-      NODE_ENV: process.env.NODE_ENV,
-      MONGO_URI: process.env.MONGO_URI ? 'Set' : 'Not set',
-    });
+    console.log('Port:', process.env.PORT);
     
-    // Ensure templates directory exists
-    const templatesDir = path.join(__dirname, '..', 'src', 'templates');
-    if (!fs.existsSync(templatesDir)) {
-      console.log(`Creating templates directory: ${templatesDir}`);
-      fs.mkdirSync(templatesDir, { recursive: true });
-    }
-
     // Ensure uploads directory exists
     const uploadsDir = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadsDir)) {
@@ -39,11 +28,7 @@ async function bootstrap() {
     
     // Enable CORS for frontend
     app.enableCors({
-      origin: [
-        process.env.FRONTEND_URL || 'http://localhost:5173', 
-        'http://localhost:8080', 
-        'https://francemed-df379.web.app'
-      ],
+      origin: true, // Allow all origins for now
       credentials: true,
     });
     
@@ -68,46 +53,12 @@ async function bootstrap() {
     
     console.log(`✅ Application is running on port ${port}`);
     console.log(`✅ Health check available at: http://0.0.0.0:${port}/api/health`);
-    console.log(`✅ Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-    console.log(`✅ Database: ${process.env.MONGO_URI ? 'Connected' : 'Not configured'}`);
-    console.log(`✅ Uploads directory: ${uploadsDir}`);
     console.log('=== Server Started Successfully ===');
   } catch (error) {
     console.error('=== FATAL ERROR: Failed to start server ===');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Stack trace:', error.stack);
-    
-    // In production, we want to exit gracefully
-    console.log('Exiting process due to startup failure...');
+    console.error('Error:', error);
     process.exit(1);
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully');
-  process.exit(0);
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-bootstrap().catch(error => {
-  console.error('Bootstrap failed:', error);
-  process.exit(1);
-});
+bootstrap();

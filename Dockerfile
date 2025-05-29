@@ -20,14 +20,8 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
-
-# Create uploads directory with proper permissions
-RUN mkdir -p uploads && chown -R nestjs:nodejs uploads
-
-# Switch to non-root user
-USER nestjs
+# Create uploads directory
+RUN mkdir -p uploads
 
 # Expose port 8080
 EXPOSE 8080
