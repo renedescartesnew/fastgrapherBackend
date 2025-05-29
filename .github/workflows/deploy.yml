@@ -7,9 +7,9 @@ on:
 
 env:
   PROJECT_ID: fastgrapherbackend
-  REGISTRY: us-central1-docker.pkg.dev
+  REGISTRY: europe-west2-docker.pkg.dev
   REPOSITORY: nest-repo
-  IMAGE: nest-brc
+  IMAGE: fastgrapherBackend
   SERVICE_NAME: nest-brc-service
   REGION: us-central1
 
