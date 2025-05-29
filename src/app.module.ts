@@ -1,3 +1,4 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -20,10 +21,28 @@ import { PhotosModule } from './photos/photos.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const uri = configService.get<string>('MONGO_URI');
+        
+        if (!uri) {
+          console.warn('⚠️  MONGO_URI not provided. Database features will be disabled.');
+          // Return a mock configuration that won't actually connect
+          return {
+            uri: 'mongodb://localhost:27017/mock',
+            connectionFactory: () => {
+              console.log('Mock MongoDB connection - no actual database');
+              return null;
+            },
+          };
+        }
+        
         console.log('Connecting to MongoDB:', uri?.replace(/\/\/.*@/, '//***:***@'));
         return {
           uri,
           dbName: 'fastgrapher',
+          retryWrites: true,
+          retryReads: true,
+          maxPoolSize: 10,
+          serverSelectionTimeoutMS: 5000,
+          socketTimeoutMS: 45000,
         };
       },
       inject: [ConfigService],
@@ -41,7 +60,7 @@ import { PhotosModule } from './photos/photos.module';
         
         // If email credentials are not configured, use a dummy configuration
         if (!mailHost || !mailUser || !mailPass) {
-          console.warn('Email configuration is incomplete. Email sending will be disabled.');
+          console.warn('⚠️  Email configuration is incomplete. Email sending will be disabled.');
           return {
             transport: {
               streamTransport: true,
