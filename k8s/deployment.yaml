@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: nestjs-app
-        image: gcr.io/fastgrapher-460722/nestjs-app:latest
+        image: europe-west2-docker.pkg.dev/fastgrapher-460722/nestjs-repo/nestjs-app:latest
         ports:
         - containerPort: 8080
         env:
