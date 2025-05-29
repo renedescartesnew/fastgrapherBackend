@@ -42,9 +42,12 @@ async function bootstrap() {
   // Global prefix for all routes
   app.setGlobalPrefix('api');
   
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
+  // Use the PORT environment variable provided by Cloud Run, fallback to 8080 then 4000
+  const port = process.env.PORT || 8080;
+  
+  await app.listen(port, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Port: ${port}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`Database: ${process.env.MONGO_URI ? 'Connected' : 'Not configured'}`);
   console.log(`Uploads directory: ${uploadsDir}`);
