@@ -1,63 +1,86 @@
 
-name: Build and Deploy to GKE
+name: Deploy to Cloud Run
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
-  ZONE: ${{ secrets.GKE_ZONE }}
-  REGISTRY: europe-west2-docker.pkg.dev
-  REPOSITORY: nestjs-repo
-  IMAGE: nestjs-app
+  PROJECT_ID: fastgrapherbackend
+  REGISTRY: us-central1-docker.pkg.dev
+  REPOSITORY: nest-repo
+  IMAGE: nest-brc
+  SERVICE_NAME: nest-brc-service
+  REGION: us-central1
 
 jobs:
-  setup-build-deploy:
-    name: Setup, Build, and Deploy
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    # Setup gcloud CLI
-    - name: Setup GCP Auth
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      # Set up the Google Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-    - name: Setup gcloud CLI
-      uses: google-github-actions/setup-gcloud@v2
+      # Authenticate Service Account
+      - name: Authenticate Service Account
+        run: |
+          echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > key.json
+          gcloud auth activate-service-account --key-file=key.json
+          gcloud config set project ${{ env.PROJECT_ID }}
 
-    # Configure Docker to use gcloud as credential helper for Artifact Registry
-    - name: Configure Docker
-      run: gcloud auth configure-docker ${{ env.REGISTRY }}
+      # Verify Docker Installation
+      - name: Verify Docker Installation
+        run: |
+          docker --version
+          docker buildx version || echo "buildx not available"
+          docker info
 
-    # Build and push Docker image
-    - name: Build and Push
-      run: |-
-        docker build \
-          -t "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}" \
-          -t "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest" .
-        docker push "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
-        docker push "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
+      # Configure Docker Authentication for Artifact Registry
+      - name: Configure Docker Authentication
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
 
-    # Deploy to GKE
-    - name: Deploy
-      run: |-
-        gcloud container clusters get-credentials "${{ env.CLUSTER_NAME }}" \
-          --zone "${{ env.ZONE }}" \
-          --project "${{ env.PROJECT_ID }}"
-        
-        # Update the image in the deployment
-        kubectl set image deployment/nestjs-app \
-          nestjs-app="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}" \
-          --record
-        
-        # Apply any changes to k8s configs
-        kubectl apply -f server/k8s/
-        
-        # Wait for rollout to complete
-        kubectl rollout status deployment/nestjs-app
+      # Docker Login using Access Token
+      - name: Docker Login using Access Token
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          echo $ACCESS_TOKEN | docker login -u oauth2accesstoken --password-stdin https://${{ env.REGISTRY }}
+
+      - name: Build and Push Image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
+          echo "Building image: $IMAGE"
+          docker build -t $IMAGE .
+          echo "Pushing image: $IMAGE"
+          docker push $IMAGE
+        env:
+          MONGODB_URL: ${{ vars.MONGODB_URL }}
+          BASE_URL: ${{ vars.BASE_URL }}
+          PORT: ${{ vars.PORT }}
+          JWT_SECRET: ${{ vars.JWT_SECRET }}
+          MAIL_DRIVER: ${{ vars.MAIL_DRIVER }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+          MAIL_PORT: ${{ vars.MAIL_PORT }}
+          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ vars.MAIL_PASSWORD }}
+          MAIL_ENCRYPTION: ${{ vars.MAIL_ENCRYPTION }}
+          MAIL_FROM_ADDRESS: ${{ vars.MAIL_FROM_ADDRESS }}
+
+      # Deploy the Docker Image to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
+          echo "Deploying Image: $IMAGE to Cloud Run..."
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image $IMAGE \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 1Gi \
+            --cpu 1 \
+            --max-instances 10 \
+            --set-env-vars="NODE_ENV=production,PORT=8080"
