@@ -26,10 +26,32 @@ async function bootstrap() {
       bufferLogs: true,
     });
     
-    // Enable CORS for frontend
+    // Enable CORS for frontend with specific origins
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://francemed-df379.web.app',
+      'https://www.fastgrapher.com',
+      'https://fastgrapher.com'
+    ];
+    
     app.enableCors({
-      origin: true, // Allow all origins for now
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Log unauthorized origin attempts
+        console.warn(`CORS blocked origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'), false);
+      },
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     });
     
     // Global validation pipe
@@ -49,6 +71,7 @@ async function bootstrap() {
     const port = parseInt(process.env.PORT || '8080', 10);
     
     console.log(`Starting server on port ${port}...`);
+    console.log('Allowed CORS origins:', allowedOrigins);
     await app.listen(port, '0.0.0.0');
     
     console.log(`✅ Application is running on port ${port}`);
