@@ -12,6 +12,7 @@ async function bootstrap() {
     console.log('Node.js version:', process.version);
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Port:', process.env.PORT);
+    console.log('Working directory:', process.cwd());
     
     // Ensure uploads directory exists
     const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -83,11 +84,18 @@ async function bootstrap() {
     
     console.log(`✅ Application is running on http://0.0.0.0:${port}`);
     console.log(`✅ Health check available at: http://0.0.0.0:${port}/api/health`);
+    console.log('✅ API routes available at: http://0.0.0.0:${port}/api/*');
     console.log('=== Server Started Successfully ===');
   } catch (error) {
     console.error('=== FATAL ERROR: Failed to start server ===');
     console.error('Error:', error);
     console.error('Stack trace:', error.stack);
+    console.error('Environment variables:', {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      MONGO_URI: process.env.MONGO_URI ? 'SET' : 'NOT SET',
+      JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+    });
     process.exit(1);
   }
 }

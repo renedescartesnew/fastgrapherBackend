@@ -8,26 +8,30 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/fastgrapher-backend']
     
-  # Deploy to Cloud Run with increased timeout
+  # Deploy to Cloud Run with correct region and settings
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: 
       - 'run'
       - 'deploy'
-      - 'fastgrapher-backend-service'  # Make sure this matches your service name
+      - 'fastgrapher-backend-service'
       - '--image'
       - 'gcr.io/$PROJECT_ID/fastgrapher-backend'
       - '--region'
-      - 'us-central1'
+      - 'europe-west1'  # Changed to match your actual service region
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
       - '--set-env-vars'
       - 'PORT=8080'
       - '--set-env-vars'
       - 'NODE_ENV=production'
       - '--set-env-vars'
-      - 'MONGO_URI=$_MONGO_URI'  # Changed from $$ to $_ for proper substitution
+      - 'FRONTEND_URL=https://www.fastgrapher.com'  # Added frontend URL
+      - '--set-env-vars'
+      - 'MONGO_URI=$_MONGO_URI'
       - '--set-env-vars'
       - 'JWT_SECRET=$_JWT_SECRET'
       - '--set-env-vars'
@@ -43,11 +47,17 @@ steps:
       - '--set-env-vars'
       - 'MAIL_FROM=$_MAIL_FROM'
       - '--timeout'
-      - '300s'  # Increased timeout
+      - '900'  # Increased to 15 minutes for Cloud Run deployment
       - '--cpu'
       - '1'
       - '--memory'
-      - '512Mi'
+      - '1Gi'  # Increased memory
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '100'
+      - '--min-instances'
+      - '0'
     
 # Store the image in Artifact Registry
 images: ['gcr.io/$PROJECT_ID/fastgrapher-backend']

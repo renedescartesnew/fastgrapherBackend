@@ -41,8 +41,8 @@ ENV NODE_ENV=production
 # Create uploads directory
 RUN mkdir -p uploads && chown -R node:node uploads
 
-# Health check - updated to use correct endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+# Health check - increased startup period for Cloud Run
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/api/health || exit 1
 
 EXPOSE 8080

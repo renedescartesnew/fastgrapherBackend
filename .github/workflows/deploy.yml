@@ -13,13 +13,13 @@ permissions:
 env:
   PROJECT_ID: fastgrapher-backend-project
   SERVICE_NAME: fastgrapher-backend
-  REGION: us-central1
+  REGION: europe-west1  # Changed to match your actual service region
   REPOSITORY: cloud-run-source-deploy
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20  # Increased timeout
 
     steps:
       - name: Checkout code
@@ -73,8 +73,11 @@ jobs:
           echo "Build submitted with ID: $BUILD_ID"
           echo "View logs at: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID"
           
-          # Wait for build completion
+          # Wait for build completion with timeout
           echo "Waiting for build to complete..."
+          TIMEOUT_COUNT=0
+          MAX_TIMEOUT=60  # 10 minutes (60 * 10 seconds)
+          
           while true; do
             BUILD_STATUS=$(gcloud builds describe $BUILD_ID --project=$PROJECT_ID --format='value(status)')
             
@@ -85,9 +88,16 @@ jobs:
                 ;;
               FAILURE|CANCELLED|TIMEOUT)
                 echo "::error::Build failed with status: $BUILD_STATUS"
+                # Get build logs for debugging
+                gcloud builds log $BUILD_ID --project=$PROJECT_ID
                 exit 1
                 ;;
               *)
+                TIMEOUT_COUNT=$((TIMEOUT_COUNT + 1))
+                if [ $TIMEOUT_COUNT -ge $MAX_TIMEOUT ]; then
+                  echo "::error::Build timeout after 10 minutes"
+                  exit 1
+                fi
                 sleep 10
                 ;;
             esac
