@@ -18,18 +18,14 @@ steps:
       - '--image'
       - 'gcr.io/$PROJECT_ID/fastgrapher-backend'
       - '--region'
-      - 'europe-west1'  # Changed to match your actual service region
+      - 'europe-west1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
       - '--port'
       - '8080'
       - '--set-env-vars'
-      - 'PORT=8080'
-      - '--set-env-vars'
-      - 'NODE_ENV=production'
-      - '--set-env-vars'
-      - 'FRONTEND_URL=https://www.fastgrapher.com'  # Added frontend URL
+      - 'PORT=8080,NODE_ENV=production,FRONTEND_URL=https://www.fastgrapher.com'
       - '--set-env-vars'
       - 'MONGO_URI=$_MONGO_URI'
       - '--set-env-vars'
@@ -47,17 +43,17 @@ steps:
       - '--set-env-vars'
       - 'MAIL_FROM=$_MAIL_FROM'
       - '--timeout'
-      - '900'  # Increased to 15 minutes for Cloud Run deployment
+      - '1200'
       - '--cpu'
-      - '1'
+      - '2'
       - '--memory'
-      - '1Gi'  # Increased memory
+      - '2Gi'
       - '--concurrency'
       - '80'
       - '--max-instances'
       - '100'
       - '--min-instances'
-      - '0'
+      - '1'
     
 # Store the image in Artifact Registry
 images: ['gcr.io/$PROJECT_ID/fastgrapher-backend']

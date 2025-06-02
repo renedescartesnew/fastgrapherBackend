@@ -23,38 +23,53 @@ async function bootstrap() {
     
     console.log('Creating NestJS application...');
     const app = await NestFactory.create(AppModule, {
-      logger: ['error', 'warn', 'log'],
+      logger: ['error', 'warn', 'log', 'debug'],
       bufferLogs: true,
     });
     
-    // Enable CORS for frontend with specific origins
-    const allowedOrigins = [
-      'http://localhost:8080',
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://francemed-df379.web.app',
-      'https://www.fastgrapher.com',
-      'https://fastgrapher.com',
-      'https://fastgrapher-backend-service-455497674783.europe-west1.run.app'
-    ];
-    
+    // Enable CORS FIRST with more permissive settings for debugging
+    console.log('Configuring CORS...');
     app.enableCors({
       origin: (origin, callback) => {
+        console.log('CORS request from origin:', origin);
+        
+        const allowedOrigins = [
+          'http://localhost:8080',
+          'http://localhost:5173',
+          'http://localhost:3000',
+          'https://francemed-df379.web.app',
+          'https://www.fastgrapher.com',
+          'https://fastgrapher.com',
+          'https://fastgrapher-backend-service-455497674783.europe-west1.run.app'
+        ];
+        
         // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+          console.log('CORS: Allowing request with no origin');
+          return callback(null, true);
+        }
         
         if (allowedOrigins.includes(origin)) {
-          console.log(`CORS allowed for origin: ${origin}`);
+          console.log(`CORS: Allowing origin: ${origin}`);
           return callback(null, true);
         }
         
         // Log unauthorized origin attempts
-        console.warn(`CORS blocked origin: ${origin}`);
+        console.warn(`CORS: Blocking origin: ${origin}`);
         return callback(new Error('Not allowed by CORS'), false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With', 
+        'Accept', 
+        'Origin',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Methods'
+      ],
       exposedHeaders: ['Authorization'],
       preflightContinue: false,
       optionsSuccessStatus: 204,
@@ -77,7 +92,14 @@ async function bootstrap() {
     const port = parseInt(process.env.PORT || '8080', 10);
     
     console.log(`Starting server on port ${port}...`);
-    console.log('Allowed CORS origins:', allowedOrigins);
+    console.log('Allowed CORS origins:', [
+      'http://localhost:8080',
+      'http://localhost:5173', 
+      'http://localhost:3000',
+      'https://francemed-df379.web.app',
+      'https://www.fastgrapher.com',
+      'https://fastgrapher.com'
+    ]);
     
     // IMPORTANT: Listen on 0.0.0.0 for Cloud Run compatibility
     await app.listen(port, '0.0.0.0');
@@ -86,6 +108,10 @@ async function bootstrap() {
     console.log(`✅ Health check available at: http://0.0.0.0:${port}/api/health`);
     console.log('✅ API routes available at: http://0.0.0.0:${port}/api/*');
     console.log('=== Server Started Successfully ===');
+    
+    // Test basic functionality
+    console.log('Testing server response...');
+    
   } catch (error) {
     console.error('=== FATAL ERROR: Failed to start server ===');
     console.error('Error:', error);
