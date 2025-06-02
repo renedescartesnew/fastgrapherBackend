@@ -1,86 +1,94 @@
 
-name: Deploy to Cloud Run
+name: Deploy to Google Cloud Run
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 env:
-  PROJECT_ID: fastgrapherbackend
-  REGISTRY: europe-west2-docker.pkg.dev
-  REPOSITORY: fastgrapherbackend
-  IMAGE: fastgrapherbackend
-  SERVICE_NAME: nest-brc-service
-  REGION: europe-west2
+  PROJECT_ID: fastgrapher-backend-project
+  SERVICE_NAME: fastgrapher-backend
+  REGION: us-central1
+  REPOSITORY: cloud-run-source-deploy
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up the Google Cloud SDK
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/855571275325/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@fastgrapher-backend-project.iam.gserviceaccount.com'
+          create_credentials_file: true
 
-      # Authenticate Service Account
-      - name: Authenticate Service Account
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Verify Dockerfile exists
         run: |
-          echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > key.json
-          gcloud auth activate-service-account --key-file=key.json
-          gcloud config set project ${{ env.PROJECT_ID }}
+          if [ ! -f "Dockerfile" ]; then
+            echo "::error::Dockerfile not found in repository root"
+            exit 1
+          fi
+          echo "Dockerfile found - proceeding with build"
 
-      # Verify Docker Installation
-      - name: Verify Docker Installation
+      - name: Build and Push Docker Image
         run: |
-          docker --version
-          docker buildx version || echo "buildx not available"
-          docker info
+          # Verify/create Artifact Registry repository
+          gcloud artifacts repositories describe $REPOSITORY \
+            --location=$REGION \
+            --project=$PROJECT_ID || \
+          gcloud artifacts repositories create $REPOSITORY \
+            --repository-format=docker \
+            --location=$REGION \
+            --project=$PROJECT_ID
 
-      # Configure Docker Authentication for Artifact Registry
-      - name: Configure Docker Authentication
-        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
-
-      # Docker Login using Access Token
-      - name: Docker Login using Access Token
-        run: |
-          ACCESS_TOKEN=$(gcloud auth print-access-token)
-          echo $ACCESS_TOKEN | docker login -u oauth2accesstoken --password-stdin https://${{ env.REGISTRY }}
-
-      - name: Build and Push Image
-        run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
-          echo "Building image: $IMAGE"
-          docker build -t $IMAGE .
-          echo "Pushing image: $IMAGE"
-          docker push $IMAGE
-        env:
-          MONGODB_URL: ${{ vars.MONGODB_URL }}
-          BASE_URL: ${{ vars.BASE_URL }}
-          PORT: ${{ vars.PORT }}
-          JWT_SECRET: ${{ vars.JWT_SECRET }}
-          MAIL_DRIVER: ${{ vars.MAIL_DRIVER }}
-          MAIL_HOST: ${{ vars.MAIL_HOST }}
-          MAIL_PORT: ${{ vars.MAIL_PORT }}
-          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ vars.MAIL_PASSWORD }}
-          MAIL_ENCRYPTION: ${{ vars.MAIL_ENCRYPTION }}
-          MAIL_FROM_ADDRESS: ${{ vars.MAIL_FROM_ADDRESS }}
-
-      # Deploy the Docker Image to Cloud Run
-      - name: Deploy to Cloud Run
-        run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
-          echo "Deploying Image: $IMAGE to Cloud Run..."
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image $IMAGE \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --port 8080 \
-            --memory 1Gi \
-            --cpu 1 \
-            --max-instances 10 \
-            --set-env-vars="NODE_ENV=production,PORT=8080"
+          # Submit build without waiting for logs
+          BUILD_OUTPUT=$(gcloud builds submit \
+            --async \
+            --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:$GITHUB_SHA \
+            --project=$PROJECT_ID \
+            --machine-type=E2_HIGHCPU_8 2>&1)
+          
+          # Extract build ID
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -o 'builds/[a-f0-9-]*' | head -1 | cut -d'/' -f2)
+          
+          if [ -z "$BUILD_ID" ]; then
+            echo "::error::Failed to submit build"
+            echo "$BUILD_OUTPUT"
+            exit 1
+          fi
+          
+          echo "Build submitted with ID: $BUILD_ID"
+          echo "View logs at: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID"
+          
+          # Wait for build completion
+          echo "Waiting for build to complete..."
+          while true; do
+            BUILD_STATUS=$(gcloud builds describe $BUILD_ID --project=$PROJECT_ID --format='value(status)')
+            
+            case $BUILD_STATUS in
+              SUCCESS)
+                echo "Build completed successfully"
+                break
+                ;;
+              FAILURE|CANCELLED|TIMEOUT)
+                echo "::error::Build failed with status: $BUILD_STATUS"
+                exit 1
+                ;;
+              *)
+                sleep 10
+                ;;
+            esac
+          done

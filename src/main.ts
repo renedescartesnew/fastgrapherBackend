@@ -33,7 +33,8 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://francemed-df379.web.app',
       'https://www.fastgrapher.com',
-      'https://fastgrapher.com'
+      'https://fastgrapher.com',
+      'https://fastgrapher-backend-service-455497674783.europe-west1.run.app'
     ];
     
     app.enableCors({
@@ -42,6 +43,7 @@ async function bootstrap() {
         if (!origin) return callback(null, true);
         
         if (allowedOrigins.includes(origin)) {
+          console.log(`CORS allowed for origin: ${origin}`);
           return callback(null, true);
         }
         
@@ -50,8 +52,11 @@ async function bootstrap() {
         return callback(new Error('Not allowed by CORS'), false);
       },
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+      exposedHeaders: ['Authorization'],
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
     
     // Global validation pipe

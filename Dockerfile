@@ -1,40 +1,50 @@
 
-# Use Node.js 18 Alpine for smaller image size
-FROM node:18-alpine
+# Use Debian-based Node image for better compatibility
+FROM node:18-bullseye
 
-# Set working directory
-WORKDIR /app
+# Create app directory
+WORKDIR /usr/src/app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install system dependencies with fixed time synchronization
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy package files first for better caching
+# Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for building)
-RUN npm ci && npm cache clean --force
+# Install npm dependencies
+RUN npm install --include=dev && \
+    npm cache clean --force
 
-# Copy source code
+# Copy all files
 COPY . .
 
-# Build the application
+# Build the app
 RUN npm run build
 
-# Remove dev dependencies after build
-RUN npm prune --omit=dev
+# Prune dev dependencies
+RUN npm prune --production
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Set the PORT environment variable explicitly
+ENV PORT=8080
+ENV NODE_ENV=production
 
-# Expose port 8080
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
 EXPOSE 8080
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=8080
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
+# Run as node user for security
+USER node
 
 # Start the application
 CMD ["node", "dist/main.js"]
