@@ -72,19 +72,22 @@ async function bootstrap() {
     // Global prefix for all routes
     app.setGlobalPrefix('api');
     
-    // Use the PORT environment variable provided by Cloud Run
+    // Use the PORT environment variable provided by Cloud Run, default to 8080
     const port = parseInt(process.env.PORT || '8080', 10);
     
     console.log(`Starting server on port ${port}...`);
     console.log('Allowed CORS origins:', allowedOrigins);
+    
+    // IMPORTANT: Listen on 0.0.0.0 for Cloud Run compatibility
     await app.listen(port, '0.0.0.0');
     
-    console.log(`✅ Application is running on port ${port}`);
+    console.log(`✅ Application is running on http://0.0.0.0:${port}`);
     console.log(`✅ Health check available at: http://0.0.0.0:${port}/api/health`);
     console.log('=== Server Started Successfully ===');
   } catch (error) {
     console.error('=== FATAL ERROR: Failed to start server ===');
     console.error('Error:', error);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 }

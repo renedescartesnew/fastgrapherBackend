@@ -5,10 +5,11 @@ FROM node:18-bullseye
 # Create app directory
 WORKDIR /usr/src/app
 
-# Install system dependencies with fixed time synchronization
+# Install system dependencies including curl for health checks
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/* && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -37,8 +38,11 @@ RUN npm prune --production
 ENV PORT=8080
 ENV NODE_ENV=production
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+# Create uploads directory
+RUN mkdir -p uploads && chown -R node:node uploads
+
+# Health check - updated to use correct endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8080/api/health || exit 1
 
 EXPOSE 8080
