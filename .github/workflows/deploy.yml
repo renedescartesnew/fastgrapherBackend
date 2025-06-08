@@ -41,22 +41,11 @@ jobs:
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           FULL_IMAGE_URI="us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$SHORT_SHA"
           
-          # Submit build without waiting for logs
+          # Submit build without log streaming
           gcloud builds submit \
             --tag $FULL_IMAGE_URI \
             --quiet \
-          
-          # Get build ID and wait for completion
-          BUILD_ID=$(gcloud builds list --filter "tags=$SHORT_SHA" --format="value(id)" --limit=1)
-          echo "Waiting for build $BUILD_ID to complete..."
-          gcloud builds wait $BUILD_ID --quiet
-          
-          # Verify build succeeded
-          BUILD_STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)")
-          if [ "$BUILD_STATUS" != "SUCCESS" ]; then
-            echo "Build failed with status: $BUILD_STATUS"
-            exit 1
-          fi
+            --no-logs
           
           echo "image_uri=$FULL_IMAGE_URI" >> $GITHUB_OUTPUT
 
