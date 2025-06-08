@@ -14,7 +14,7 @@ env:
 
 permissions:
   contents: 'read'
-  id-token: 'write'  # Critical for Workload Identity
+  id-token: 'write'
 
 jobs:
   deploy:
@@ -24,13 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Minimal authentication configuration
       - name: Authenticate
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          # No audience parameter - let it use GitHub's default
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
