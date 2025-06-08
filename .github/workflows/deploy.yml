@@ -33,10 +33,8 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           create_credentials_file: true
           token_format: access_token
-          # Add both audiences explicitly
-          audience: |
-            https://token.actions.githubusercontent.com
-            https://iam.googleapis.com/projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider          
+          audience: "https://token.actions.githubusercontent.com"  # Single line, exact match
+
       # Alternative if Workload Identity fails (fallback to SA key)
       - name: Authenticate (Fallback)
         if: steps.auth.outputs.credentials_file_path == ''
