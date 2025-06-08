@@ -14,40 +14,34 @@ env:
 
 permissions:
   contents: 'read'
-  id-token: 'write'
+  id-token: 'write'  # Critical for Workload Identity
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
+      # Minimal authentication configuration
       - name: Authenticate
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          # Remove all other parameters to use defaults
+          # No audience parameter - let it use GitHub's default
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
 
-      - name: Build and Deploy
+      - name: Deploy
         run: |-
           gcloud builds submit \
-            --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
-            --project=$PROJECT_ID
-
+            --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA
+          
           gcloud run deploy $SERVICE_NAME \
             --image ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --region $REGION \
             --platform managed \
-            --allow-unauthenticated \
-            --set-env-vars NODE_ENV=production \
-            --set-secrets=MONGO_URI=MONGO_URI:latest \
-            --set-secrets=JWT_SECRET=JWT_SECRET:latest
+            --allow-unauthenticated
