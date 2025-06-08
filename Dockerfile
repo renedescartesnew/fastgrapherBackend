@@ -3,10 +3,11 @@
 FROM node:20-bullseye as builder
 
 # Install only essential build tools (removed TensorFlow native deps)
-RUN apt-get update && apt-get install -y \
-    python3 make g++ pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+    
 WORKDIR /usr/src/app
 COPY package*.json tsconfig*.json ./
 

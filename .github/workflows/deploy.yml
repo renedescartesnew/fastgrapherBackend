@@ -40,18 +40,20 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      # 👇 NEW STEP: Build and push the Docker image
       - name: Build and Push Docker Image
         run: |-
           gcloud builds submit \
             --tag us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --quiet
 
-      # 👇 Now deploy the newly built image
       - name: Deploy to Cloud Run
         run: |-
           gcloud run deploy $SERVICE_NAME \
             --image us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --region $REGION \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --cpu=1 \
+            --memory=512Mi \
+            --max-instances=3 \
+            --timeout=300s
