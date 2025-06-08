@@ -7,10 +7,10 @@ on:
 
 permissions:
   contents: 'read'
-  id-token: 'write'
+  id-token: 'write'  # Essential for Workload Identity
 
 env:
-  PROJECT_ID: backend-fastgrapher
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: backend-fastgrapher-service
   REGION: us-central1
   REPOSITORY: fastgrapher-repo
@@ -25,12 +25,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Using Workload Identity Federation (recommended)
       - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          
+      # Alternative if Workload Identity fails (fallback to SA key)
+      - name: Authenticate (Fallback)
+        if: steps.auth.outputs.credentials_file_path == ''
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
-          
+
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
@@ -39,13 +48,22 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
+      - name: Verify Permissions
+        run: |
+          gcloud projects get-iam-policy $PROJECT_ID \
+            --flatten="bindings[].members" \
+            --format="table(bindings.role)" \
+            --filter="bindings.members:serviceAccount:${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}"
+
       - name: Build and Deploy
         run: |-
+          # Build and push image
           gcloud builds submit \
             --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --project=$PROJECT_ID \
             --timeout=1200s
 
+          # Deploy to Cloud Run
           gcloud run deploy $SERVICE_NAME \
             --image ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --region $REGION \
