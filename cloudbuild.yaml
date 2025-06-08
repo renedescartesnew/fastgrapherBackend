@@ -15,8 +15,7 @@ steps:
     
   # Push latest tag
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:latest']
-    timeout: '600s'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$SHORT_SHA']
     
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
