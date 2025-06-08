@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: 'read'
-  id-token: 'write'  # Essential for Workload Identity
+  id-token: 'write'
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -25,8 +25,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Using Workload Identity Federation (recommended)
+      # Primary authentication with Workload Identity
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -34,17 +35,13 @@ jobs:
           create_credentials_file: true
           token_format: access_token
           audience: "https://token.actions.githubusercontent.com"
-    # Remove any custom inputs not in the official spec          # Add these to ensure proper context
-          actor: ${{ github.actor }}
-          repository: ${{ github.repository }}
 
-      # Alternative if Workload Identity fails (fallback to SA key)
+      # Fallback to service account key if needed
       - name: Authenticate (Fallback)
         if: steps.auth.outputs.credentials_file_path == ''
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -54,22 +51,13 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Verify Permissions
-        run: |
-          gcloud projects get-iam-policy $PROJECT_ID \
-            --flatten="bindings[].members" \
-            --format="table(bindings.role)" \
-            --filter="bindings.members:serviceAccount:${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}"
-
       - name: Build and Deploy
         run: |-
-          # Build and push image
           gcloud builds submit \
             --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --project=$PROJECT_ID \
             --timeout=1200s
 
-          # Deploy to Cloud Run
           gcloud run deploy $SERVICE_NAME \
             --image ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --region $REGION \
@@ -78,17 +66,6 @@ jobs:
             --set-env-vars NODE_ENV=production \
             --set-secrets=MONGO_URI=MONGO_URI:latest \
             --set-secrets=JWT_SECRET=JWT_SECRET:latest \
-            --set-secrets=MAIL_HOST=MAIL_HOST:latest \
-            --set-secrets=MAIL_PORT=MAIL_PORT:latest \
-            --set-secrets=MAIL_SECURE=MAIL_SECURE:latest \
-            --set-secrets=MAIL_USER=MAIL_USER:latest \
-            --set-secrets=MAIL_PASS=MAIL_PASS:latest \
-            --set-secrets=MAIL_FROM=MAIL_FROM:latest \
             --timeout=900s \
             --cpu=2 \
-            --memory=1Gi \
-            --min-instances=0 \
-            --max-instances=10 \
-            --concurrency=80 \
-            --cpu-throttling \
-            --startup-cpu-boost
+            --memory=1Gi
