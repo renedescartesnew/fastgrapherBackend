@@ -28,6 +28,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          service_account: 741083673218-compute@developer.gserviceaccount.com
           
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2

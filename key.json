@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "backend-fastgrapher",
+  "private_key_id": "4211ea366258210ca4e37dd32e85baab64db7b00",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCp4UFw89GjsY7z\n/z7szIMyeNMo5EY+A3Nfa8XHDeF2QTUECOjyeKdWkxodeF9IwPC+VCogOdGAgNUZ\ntPsILz8gEk+v0GjfMK3ddUAfXgCDLnoBF6dtJo2d+h6eVawaTd/AzJlA6ef7VijU\nQ67Zopa8PxQHLfkwCoN+Kv09LN73j+YvP4So/+hyHSfSRDbrxfP1QHZVoDfppYhO\n14rWxHp0QJqwAMgw2MhgZGtqeic8s/I6o0mYlQ3JFCavTTfn0wjKTyzcvHSQtQUQ\niAXEJb0bhtejcN++NZghGEyh7DibhZsvtNnSpKThGSHBZHcV3npDPP1PdrYbSiUm\ndoTcyMPDAgMBAAECggEASgju3byMvRPJUsIHGOkqNklc8WHG0Qjs84WC/LSqcUCK\ny9bcOqvldcAHLhfDIvBfGvuQHlpEWQYMmTb7/j2k+6OvUdZ4lehfpXePefwcKg+L\nwUUfRNz79ADI7kU1C4Orw5kHIzitTqZmhdd3cMbAfYrZ/iUFh+/VDZvLoKkZBPdd\n6BqEmVFPwPd7vUOYBeljuMSZLd/8qwJoqtgvLwZGq/Ce3XyIg/2ftMw8RfEEgyXh\nTU5w28UQ1C7qQ2/JPkEVxWmY2MwgtEk7V/9IeZDx8V/jc8o4TNM33ulEW0kwse7x\nOBZk7lBAHryRVpziF3P2lY1BmoLPoPynuVvsD3Sg4QKBgQDfvi2JIRzvK7HRCgz3\nH8jm3UsFjHDlraMV5/Py1jOZ8UEPRWYXn2ittiRApYQO96HoFgYdgNy4Ivil3fqm\nsRr/An7PFuzMjUFWf6x6KW377XE7uv/mMBm/J+QezycCvQnhxs5/kwLeD/QoTxNG\nIW5642rOFur9Lo/fvEm4YqYDoQKBgQDCXx9N7Pt933ZcnWetx1eGDKYfOMYt1KxR\nmDpTOM0FsFOZE0ObyplS4eTpt84qH3LhzYfX0KlB+iFFfNcaa7Xa/2ChOb6qrSIY\nD0Ww9sdWP0gasbFsXP2hkj9uBpAz5otdEAHR4JzCBHBLll+v7qkHjrestge4qFq8\nZBjA4mgM4wKBgQCkb1t97aUbLYy4qd9Pe7+l1Ds/r7CFTDCQd/E0pjI0UDdVZtaa\nQ+Cl0jggfsRoT5xhOlZyNnOArMr69AIzofPKOOZDgoCz8Jh1Xs2+1lXrkdznXg6V\n+QHjGAkyj2IHRDFQClFXNw8jbqwtN7hdkVJl5F9paTR4sFCyyOmRJocGIQKBgQCu\niHuznXi2LlI6F51hjf4pgHIq1vAddzrEiczVrctrsElgysuKuQG0SuMiesnFSTf/\nSm8Qe22AsPnvS4pbTxyc6XP7Ub7Dw3M553zMystzxp8YWTbX9yhITOpoAby63emG\nRzlbHDWmghXTydNiRwvAnYaQr2N/jKztPXR8vtBvwQKBgQCMR+5u6w+YmuVX5wF5\nTWRo3AeiDXwBJASsRx7hgJlN5tMu5FzCL+ED3qVlDKCpjW3j7N6iZzxdqPC+crP5\naXyXX1ZZcv60kIOymebY8AIFJxApFTE1oPp0wYQ0lvKBC1q7oCyUy8I5iAvAqkKl\nxdCLqDTGQEm+47LEamZkUmqksw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com",
+  "client_id": "106064204313438669126",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/github-actions-sa%40backend-fastgrapher.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
