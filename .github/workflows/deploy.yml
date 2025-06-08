@@ -1,4 +1,3 @@
-
 name: Deploy to Google Cloud Run
 
 on:
@@ -14,6 +13,8 @@ env:
   PROJECT_ID: backend-fastgrapher
   SERVICE_NAME: backend-fastgrapher-service
   REGION: us-central1
+  REPOSITORY: fastgrapher-repo
+  IMAGE_NAME: fastgrapher-backend
 
 jobs:
   deploy:
@@ -28,7 +29,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          service_account: 741083673218-compute@developer.gserviceaccount.com
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
           
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -36,17 +37,17 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
 
       - name: Configure Docker
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       - name: Build and Deploy
         run: |-
           gcloud builds submit \
-            --tag us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --project=$PROJECT_ID \
             --timeout=1200s
 
           gcloud run deploy $SERVICE_NAME \
-            --image us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --image ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
