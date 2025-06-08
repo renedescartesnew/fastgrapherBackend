@@ -19,34 +19,36 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'  # Critical for Workload Identity
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate
+      # Authentication MUST come before setup-gcloud
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          create_credentials_file: false
-          token_format: "access_token"
-          access_token_lifetime: "3600s"
-          delegates: ""
+          create_credentials_file: true  # Creates temporary credentials
+          token_format: access_token
 
-      - name: Set up gcloud
+      # Setup gcloud AFTER authentication
+      - name: Set up Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-         project_id: ${{ secrets.GCP_PROJECT_ID }}
-         export_default_credentials: true  
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Deploy
         run: |-
           gcloud builds submit \
-            --tag ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA
+            --tag us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA
           
-          gcloud run deploy $SERVICE_NAME \
-            --image ${{ env.REGION }}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
-            --region $REGION \
+          gcloud run deploy backend-fastgrapher-service \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --region us-central1 \
             --platform managed \
             --allow-unauthenticated
