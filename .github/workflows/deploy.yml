@@ -34,10 +34,10 @@ jobs:
           create_credentials_file: true
           token_format: access_token
           audience: "https://token.actions.githubusercontent.com"
-          # Add these to ensure proper context
+    # Remove any custom inputs not in the official spec          # Add these to ensure proper context
           actor: ${{ github.actor }}
           repository: ${{ github.repository }}
-          
+
       # Alternative if Workload Identity fails (fallback to SA key)
       - name: Authenticate (Fallback)
         if: steps.auth.outputs.credentials_file_path == ''
