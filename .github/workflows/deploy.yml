@@ -29,9 +29,11 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/gh-actions-pool/providers/gh-oidc-provider
+          service_account: github-actions-runner@backend-fastgrapher.iam.gserviceaccount.com
           create_credentials_file: true
+          # Add this to ensure correct audience
+          audience: https://token.actions.githubusercontent.com
           
       # Alternative if Workload Identity fails (fallback to SA key)
       - name: Authenticate (Fallback)
