@@ -41,11 +41,11 @@ jobs:
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           FULL_IMAGE_URI="us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$SHORT_SHA"
           
-          # Submit build without log streaming
+          # Submit build with log streaming disabled via alternative method
           gcloud builds submit \
             --tag $FULL_IMAGE_URI \
             --quiet \
-            --no-logs
+            --suppress-logs
           
           echo "image_uri=$FULL_IMAGE_URI" >> $GITHUB_OUTPUT
 
