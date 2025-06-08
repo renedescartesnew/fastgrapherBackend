@@ -32,7 +32,6 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
           service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com          
-          create_credentials_file: true
           token_format: access_token
           audience: "https://token.actions.githubusercontent.com"
       # Fallback to service account key if needed
