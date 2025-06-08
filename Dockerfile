@@ -2,47 +2,55 @@
 # Stage 1: Builder
 FROM node:20-bullseye as builder
 
-# Install build tools
+# Install only essential build tools (removed TensorFlow native deps)
 RUN apt-get update && apt-get install -y \
     python3 make g++ pkg-config \
-    libcairo2-dev libpango1.0-dev \
-    libjpeg-dev libgif-dev librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 COPY package*.json tsconfig*.json ./
-RUN npm ci --include=dev
+
+# Install dependencies with optimizations
+RUN npm ci --include=dev --legacy-peer-deps
+
 COPY . .
 RUN npm run build
-RUN npm prune --production
 
-# Stage 2: Runtime
+# Prune dev dependencies and clean npm cache
+RUN npm prune --production && npm cache clean --force
+
+# Stage 2: Runtime (optimized for faster startup)
 FROM node:20-bullseye-slim
 
-# Runtime deps
+# Install only curl for health checks
 RUN apt-get update && apt-get install -y \
-    libcairo2 libpango-1.0-0 libpangocairo-1.0-0 \
-    libjpeg62-turbo libgif7 librsvg2-2 \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /usr/src/app
+
+# Copy built application
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/package.json .
+COPY --from=builder /usr/src/app/package.json ./
 
-# Critical environment variables
+# Environment variables for production
 ENV PORT=8080
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
+
+# Expose port
 EXPOSE $PORT
 
-# Health check with startup delay
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+# Optimized health check with longer startup period
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-# Non-root user
-RUN chown -R node:node .
+# Create non-root user
+RUN groupadd -g 1001 node && useradd -r -u 1001 -g node node
+RUN chown -R node:node /usr/src/app
 USER node
 
-CMD ["node", "--max-old-space-size=1536", "dist/main.js"]
+# Optimized startup command
+CMD ["node", "--max-old-space-size=512", "--optimize-for-size", "dist/main.js"]
