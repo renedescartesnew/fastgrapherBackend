@@ -5,16 +5,16 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
-permissions:
-  contents: 'read'
-  id-token: 'write'
-
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: backend-fastgrapher-service
   REGION: us-central1
   REPOSITORY: fastgrapher-repo
   IMAGE_NAME: fastgrapher-backend
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 jobs:
   deploy:
@@ -25,28 +25,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Primary authentication with Workload Identity
+      # Authenticate using Workload Identity
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
-          service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com          
+          service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com
           create_credentials_file: true
-          token_format: access_token
-          audience: "https://token.actions.githubusercontent.com"
-      # Fallback to service account key if needed
-      - name: Authenticate (Fallback)
-        if: steps.auth.outputs.credentials_file_path == ''
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}  # Temporary fallback
-          export_default_credentials: true
 
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
