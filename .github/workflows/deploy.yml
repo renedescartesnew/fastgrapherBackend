@@ -29,6 +29,10 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          create_credentials_file: false
+          token_format: "access_token"
+          access_token_lifetime: "3600s"
+          delegates: "
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
