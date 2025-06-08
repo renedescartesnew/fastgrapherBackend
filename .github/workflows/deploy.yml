@@ -33,6 +33,8 @@ jobs:
           workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
           service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com
           create_credentials_file: true
+          # Explicitly set the audience to match what's in your provider
+          audience: "https://iam.googleapis.com/projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
