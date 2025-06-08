@@ -11,15 +11,14 @@ permissions:
   id-token: 'write'
 
 env:
-  PROJECT_ID: fastgrapher-backend-project
-  SERVICE_NAME: fastgrapher-backend
-  REGION: europe-west1  # Changed to match your actual service region
-  REPOSITORY: cloud-run-source-deploy
+  PROJECT_ID: backend-fastgrapher
+  SERVICE_NAME: backend-fastgrapher-service
+  REGION: us-central1
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Increased timeout
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -28,77 +27,37 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/855571275325/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'github-actions-sa@fastgrapher-backend-project.iam.gserviceaccount.com'
-          create_credentials_file: true
-
-      - name: Set up Google Cloud SDK
+          workload_identity_provider: 'projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+          service_account: 'github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com'
+          
+      - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: Verify Dockerfile exists
-        run: |
-          if [ ! -f "Dockerfile" ]; then
-            echo "::error::Dockerfile not found in repository root"
-            exit 1
-          fi
-          echo "Dockerfile found - proceeding with build"
-
-      - name: Build and Push Docker Image
-        run: |
-          # Verify/create Artifact Registry repository
-          gcloud artifacts repositories describe $REPOSITORY \
-            --location=$REGION \
-            --project=$PROJECT_ID || \
-          gcloud artifacts repositories create $REPOSITORY \
-            --repository-format=docker \
-            --location=$REGION \
+      - name: Build and Deploy
+        run: |-
+          gcloud builds submit \
+            --tag us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
             --project=$PROJECT_ID
 
-          # Submit build without waiting for logs
-          BUILD_OUTPUT=$(gcloud builds submit \
-            --async \
-            --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:$GITHUB_SHA \
-            --project=$PROJECT_ID \
-            --machine-type=E2_HIGHCPU_8 2>&1)
-          
-          # Extract build ID
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -o 'builds/[a-f0-9-]*' | head -1 | cut -d'/' -f2)
-          
-          if [ -z "$BUILD_ID" ]; then
-            echo "::error::Failed to submit build"
-            echo "$BUILD_OUTPUT"
-            exit 1
-          fi
-          
-          echo "Build submitted with ID: $BUILD_ID"
-          echo "View logs at: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID"
-          
-          # Wait for build completion with timeout
-          echo "Waiting for build to complete..."
-          TIMEOUT_COUNT=0
-          MAX_TIMEOUT=60  # 10 minutes (60 * 10 seconds)
-          
-          while true; do
-            BUILD_STATUS=$(gcloud builds describe $BUILD_ID --project=$PROJECT_ID --format='value(status)')
-            
-            case $BUILD_STATUS in
-              SUCCESS)
-                echo "Build completed successfully"
-                break
-                ;;
-              FAILURE|CANCELLED|TIMEOUT)
-                echo "::error::Build failed with status: $BUILD_STATUS"
-                # Get build logs for debugging
-                gcloud builds log $BUILD_ID --project=$PROJECT_ID
-                exit 1
-                ;;
-              *)
-                TIMEOUT_COUNT=$((TIMEOUT_COUNT + 1))
-                if [ $TIMEOUT_COUNT -ge $MAX_TIMEOUT ]; then
-                  echo "::error::Build timeout after 10 minutes"
-                  exit 1
-                fi
-                sleep 10
-                ;;
-            esac
-          done
+          gcloud run deploy $SERVICE_NAME \
+            --image us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars NODE_ENV=production \
+            --set-secrets=MONGO_URI=MONGO_URI:latest \
+            --set-secrets=JWT_SECRET=JWT_SECRET:latest \
+            --set-secrets=MAIL_HOST=MAIL_HOST:latest \
+            --set-secrets=MAIL_PORT=MAIL_PORT:latest \
+            --set-secrets=MAIL_SECURE=MAIL_SECURE:latest \
+            --set-secrets=MAIL_USER=MAIL_USER:latest \
+            --set-secrets=MAIL_PASS=MAIL_PASS:latest \
+            --set-secrets=MAIL_FROM=MAIL_FROM:latest \
+            --timeout=300s \
+            --cpu=1 \
+            --memory=512Mi \
+            --min-instances=1 \
+            --max-instances=3 \
+            --concurrency=80

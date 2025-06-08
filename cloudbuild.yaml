@@ -2,58 +2,56 @@
 steps:
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/fastgrapher-backend', '.']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend', '.']
     
   # Push the Docker image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/fastgrapher-backend']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']
     
-  # Deploy to Cloud Run with correct region and settings
+  # Deploy to Cloud Run with increased timeout
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: 
       - 'run'
       - 'deploy'
-      - 'fastgrapher-backend-service'
+      - 'backend-fastgrapher-service'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/fastgrapher-backend'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend'
       - '--region'
-      - 'europe-west1'
+      - 'us-central1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
       - '--set-env-vars'
-      - 'PORT=8080,NODE_ENV=production,FRONTEND_URL=https://www.fastgrapher.com'
-      - '--set-env-vars'
-      - 'MONGO_URI=$_MONGO_URI'
-      - '--set-env-vars'
-      - 'JWT_SECRET=$_JWT_SECRET'
-      - '--set-env-vars'
-      - 'MAIL_HOST=$_MAIL_HOST'
-      - '--set-env-vars'
-      - 'MAIL_PORT=$_MAIL_PORT'
-      - '--set-env-vars'
-      - 'MAIL_SECURE=$_MAIL_SECURE'
-      - '--set-env-vars'
-      - 'MAIL_USER=$_MAIL_USER'
-      - '--set-env-vars'
-      - 'MAIL_PASS=$_MAIL_PASS'
-      - '--set-env-vars'
-      - 'MAIL_FROM=$_MAIL_FROM'
+      - 'NODE_ENV=production'
+      - '--set-secrets'
+      - 'MONGO_URI=MONGO_URI:latest'
+      - '--set-secrets'
+      - 'JWT_SECRET=JWT_SECRET:latest'
+      - '--set-secrets'
+      - 'MAIL_HOST=MAIL_HOST:latest'
+      - '--set-secrets'
+      - 'MAIL_PORT=MAIL_PORT:latest'
+      - '--set-secrets'
+      - 'MAIL_SECURE=MAIL_SECURE:latest'
+      - '--set-secrets'
+      - 'MAIL_USER=MAIL_USER:latest'
+      - '--set-secrets'
+      - 'MAIL_PASS=MAIL_PASS:latest'
+      - '--set-secrets'
+      - 'MAIL_FROM=MAIL_FROM:latest'
       - '--timeout'
-      - '1200'
+      - '300s'
       - '--cpu'
-      - '2'
+      - '1'
       - '--memory'
-      - '2Gi'
-      - '--concurrency'
-      - '80'
-      - '--max-instances'
-      - '100'
+      - '512Mi'
       - '--min-instances'
       - '1'
+      - '--max-instances'
+      - '3'
+      - '--concurrency'
+      - '80'
     
 # Store the image in Artifact Registry
-images: ['gcr.io/$PROJECT_ID/fastgrapher-backend']
+images: ['us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']

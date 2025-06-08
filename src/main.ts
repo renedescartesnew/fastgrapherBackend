@@ -27,7 +27,7 @@ async function bootstrap() {
       bufferLogs: true,
     });
     
-    // Enable CORS FIRST with more permissive settings for debugging
+    // Enable CORS with updated backend URL
     console.log('Configuring CORS...');
     app.enableCors({
       origin: (origin, callback) => {
@@ -40,7 +40,7 @@ async function bootstrap() {
           'https://francemed-df379.web.app',
           'https://www.fastgrapher.com',
           'https://fastgrapher.com',
-          'https://fastgrapher-backend-service-455497674783.europe-west1.run.app'
+          'https://backend-fastgrapher-service-741083673218.us-central1.run.app'
         ];
         
         // Allow requests with no origin (like mobile apps or curl requests)
@@ -98,7 +98,8 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://francemed-df379.web.app',
       'https://www.fastgrapher.com',
-      'https://fastgrapher.com'
+      'https://fastgrapher.com',
+      'https://backend-fastgrapher-service-741083673218.us-central1.run.app'
     ]);
     
     // IMPORTANT: Listen on 0.0.0.0 for Cloud Run compatibility

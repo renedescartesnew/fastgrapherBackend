@@ -1,54 +1,48 @@
 
-# Use Debian-based Node image for better compatibility
-FROM node:18-bullseye
+# Stage 1: Builder
+FROM node:20-bullseye as builder
 
-# Create app directory
-WORKDIR /usr/src/app
-
-# Install system dependencies including curl for health checks
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/* && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
+# Install build tools
+RUN apt-get update && apt-get install -y \
+    python3 make g++ pkg-config \
+    libcairo2-dev libpango1.0-dev \
+    libjpeg-dev libgif-dev librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
-
-# Install npm dependencies
-RUN npm install --include=dev && \
-    npm cache clean --force
-
-# Copy all files
+WORKDIR /usr/src/app
+COPY package*.json tsconfig*.json ./
+RUN npm ci --include=dev
 COPY . .
-
-# Build the app
 RUN npm run build
-
-# Prune dev dependencies
 RUN npm prune --production
 
-# Set the PORT environment variable explicitly
+# Stage 2: Runtime
+FROM node:20-bullseye-slim
+
+# Runtime deps
+RUN apt-get update && apt-get install -y \
+    libcairo2 libpango-1.0-0 libpangocairo-1.0-0 \
+    libjpeg62-turbo libgif7 librsvg2-2 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/package.json .
+
+# Critical environment variables
 ENV PORT=8080
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+EXPOSE $PORT
 
-# Create uploads directory
-RUN mkdir -p uploads && chown -R node:node uploads
+# Health check with startup delay
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-# Health check - increased startup period for Cloud Run
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/api/health || exit 1
-
-EXPOSE 8080
-
-# Run as node user for security
+# Non-root user
+RUN chown -R node:node .
 USER node
 
-# Start the application
-CMD ["node", "dist/main.js"]
+CMD ["node", "--max-old-space-size=1536", "dist/main.js"]
