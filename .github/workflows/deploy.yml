@@ -27,15 +27,13 @@ jobs:
 
       # Primary authentication with Workload Identity
       - name: Authenticate to Google Cloud
-        id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
+          service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com          
           create_credentials_file: true
           token_format: access_token
           audience: "https://token.actions.githubusercontent.com"
-
       # Fallback to service account key if needed
       - name: Authenticate (Fallback)
         if: steps.auth.outputs.credentials_file_path == ''
