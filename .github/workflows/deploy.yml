@@ -32,7 +32,7 @@ jobs:
           create_credentials_file: false
           token_format: "access_token"
           access_token_lifetime: "3600s"
-          delegates: "
+          delegates: ""
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
