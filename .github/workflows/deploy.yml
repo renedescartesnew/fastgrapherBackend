@@ -9,7 +9,6 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: backend-fastgrapher-service
   REGION: us-central1
-  REPOSITORY: fastgrapher-repo
   IMAGE_NAME: fastgrapher-backend
 
 permissions:
@@ -34,17 +33,15 @@ jobs:
 
       - name: Set up Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Build and Deploy
         run: |-
           # Use short SHA for tagging
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          FULL_IMAGE_URI="us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$SHORT_SHA"
           
           # Submit build using cloudbuild.yaml
           gcloud builds submit \
             --config=cloudbuild.yaml \
-            --substitutions=_IMAGE_TAG=$SHORT_SHA,SHORT_SHA=$SHORT_SHA \
+            --substitutions=SHORT_SHA=$SHORT_SHA \
+            --project=$PROJECT_ID \
             --quiet
