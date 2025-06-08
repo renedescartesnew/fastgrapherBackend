@@ -19,7 +19,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -30,33 +30,21 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          create_credentials_file: true
 
       - name: Set up Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Build and Push Docker Image
-        id: build
+      - name: Build and Deploy
         run: |-
           # Use short SHA for tagging
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           FULL_IMAGE_URI="us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$SHORT_SHA"
           
-          # Submit build with log streaming disabled via alternative method
+          # Submit build using cloudbuild.yaml
           gcloud builds submit \
-            --tag $FULL_IMAGE_URI \
-            --quiet \
-            --suppress-logs
-          
-          echo "image_uri=$FULL_IMAGE_URI" >> $GITHUB_OUTPUT
-
-      - name: Deploy to Cloud Run
-        run: |-
-          gcloud run deploy $SERVICE_NAME \
-            --image ${{ steps.build.outputs.image_uri }} \
-            --region $REGION \
-            --platform managed \
-            --allow-unauthenticated \
-            --cpu=1 \
-            --memory=512Mi \
-            --min-instances=1 \
-            --max-instances=3
+            --config=cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=$SHORT_SHA,SHORT_SHA=$SHORT_SHA \
+            --quiet

@@ -1,26 +1,34 @@
-
 steps:
-  # Build the Docker image with timeout extension
+  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend', '.']
+    args: ['build', 
+           '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:$_IMAGE_TAG',
+           '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:latest',
+           '.']
     timeout: '1200s'
+    id: build
     
-  # Push the Docker image to Artifact Registry
+  # Push the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:$_IMAGE_TAG']
     timeout: '600s'
     
-  # Deploy to Cloud Run with optimized settings
+  # Push latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:latest']
+    timeout: '600s'
+    
+  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: 
       - 'run'
       - 'deploy'
-      - 'backend-fastgrapher-service'
+      - '$_SERVICE_NAME'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:$_IMAGE_TAG'
       - '--region'
-      - 'us-central1'
+      - '$_REGION'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
@@ -56,9 +64,16 @@ steps:
       - '80'
       - '--cpu-throttling'
       - '--startup-cpu-boost'
+    id: deploy
 
 options:
   machineType: 'E2_HIGHCPU_8'
   
-# Store the image in Artifact Registry
-images: ['us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']
+substitutions:
+  _IMAGE_NAME: fastgrapher-backend
+  _SERVICE_NAME: backend-fastgrapher-service
+  _REGION: us-central1
+
+images: 
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:$_IMAGE_TAG'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$_IMAGE_NAME:latest'
