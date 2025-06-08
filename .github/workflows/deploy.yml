@@ -14,7 +14,7 @@ env:
 
 permissions:
   contents: 'read'
-  id-token: 'write'
+  id-token: 'write'  # This is required for Workload Identity Federation
 
 jobs:
   deploy:
@@ -30,11 +30,10 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
-          service_account: github-actions-sa@backend-fastgrapher.iam.gserviceaccount.com
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           create_credentials_file: true
-          # Explicitly set the audience to match what's in your provider
-          audience: "https://iam.googleapis.com/projects/741083673218/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
+          # Remove any audience parameter to use GitHub's default
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
