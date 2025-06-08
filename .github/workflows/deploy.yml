@@ -19,10 +19,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
+    timeout-minutes: 15
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,28 +30,35 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          create_credentials_file: true
 
       - name: Set up Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Build and Push Docker Image
+        id: build
         run: |-
+          # Get short SHA for tagging
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          TAG="$SHORT_SHA"
+          
+          # Build and push with explicit wait
           gcloud builds submit \
-            --tag us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
-            --quiet \
-            --async  # Don't wait for build completion
-          # Wait separately for build to complete
-          gcloud builds list --filter "tags=$GITHUB_SHA" --format="value(id)" | while read build_id; do
-            gcloud builds log --stream $build_id || echo "Log streaming failed, but build continues"
-          done
-          # Verify build succeeded
-          gcloud builds list --filter "tags=$GITHUB_SHA AND status=SUCCESS" --format="value(id)" | head -1
+            --tag us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$TAG \
+            --quiet
+          
+          # Verify build completed
+          BUILD_ID=$(gcloud builds list --filter "tags=$TAG" --format="value(id)" --limit=1)
+          gcloud builds wait $BUILD_ID
+          
+          # Output the image tag for deployment
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy to Cloud Run
         run: |-
           gcloud run deploy $SERVICE_NAME \
-            --image us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:$GITHUB_SHA \
+            --image us-central1-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ steps.build.outputs.image_tag }} \
             --region $REGION \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --cpu=1 \
+            --memory=512Mi
