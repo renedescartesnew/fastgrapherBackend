@@ -43,10 +43,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Deploy
-        run: |-
-          gcloud builds submit \
-            --tag us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA
-          
+        run: |-          
           gcloud run deploy backend-fastgrapher-service \
             --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
             --region us-central1 \
