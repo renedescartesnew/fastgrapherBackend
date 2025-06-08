@@ -45,7 +45,6 @@ jobs:
           gcloud builds submit \
             --tag $FULL_IMAGE_URI \
             --quiet \
-            --async
           
           # Get build ID and wait for completion
           BUILD_ID=$(gcloud builds list --filter "tags=$SHORT_SHA" --format="value(id)" --limit=1)
