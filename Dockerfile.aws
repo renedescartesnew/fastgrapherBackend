@@ -1,0 +1,64 @@
+
+# Multi-stage build for AWS deployment
+FROM node:20-bullseye as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    python3 make g++ pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json tsconfig*.json ./
+
+# Install dependencies
+RUN npm ci --include=dev --legacy-peer-deps
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Prune dev dependencies
+RUN npm prune --production && npm cache clean --force
+
+# Production stage
+FROM node:20-bullseye-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /usr/src/app
+
+# Copy built application from builder stage
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/package.json ./
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
+# Create non-root user
+RUN groupadd -g 1001 node && useradd -r -u 1001 -g node node
+RUN chown -R node:node /usr/src/app
+USER node
+
+# Expose port
+EXPOSE $PORT
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
+
+# Start the application
+CMD ["node", "dist/main.js"]
