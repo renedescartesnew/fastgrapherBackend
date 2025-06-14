@@ -14,7 +14,7 @@ Parameters:
     Description: Environment name
 
 Resources:
-  # VPC and Networking (with explicit ordering)
+  # VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -25,6 +25,7 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-vpc
 
+  # Internet Gateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -38,9 +39,9 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
+  # Subnets
   PublicSubnet1:
     Type: AWS::EC2::Subnet
-    DependsOn: VPC
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
@@ -52,7 +53,6 @@ Resources:
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
-    DependsOn: VPC
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/24
@@ -62,9 +62,9 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-public-subnet-2
 
+  # Route Table
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
-    DependsOn: VPC
     Properties:
       VpcId: !Ref VPC
       Tags:
@@ -91,10 +91,9 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
-  # Security Groups (simplified and explicit dependencies)
+  # Security Groups
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    DependsOn: VPC
     Properties:
       GroupDescription: Security group for Application Load Balancer
       VpcId: !Ref VPC
@@ -113,7 +112,6 @@ Resources:
 
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    DependsOn: ALBSecurityGroup
     Properties:
       GroupDescription: Security group for ECS tasks
       VpcId: !Ref VPC
@@ -126,7 +124,7 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-ecs-sg
 
-  # ECR Repository (no dependencies needed)
+  # ECR Repository
   ECRRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -159,11 +157,10 @@ Resources:
       LogGroupName: !Sub /ecs/${ProjectName}
       RetentionInDays: 14
 
-  # IAM Roles (simplified)
+  # IAM Roles
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${ProjectName}-task-execution-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -191,7 +188,6 @@ Resources:
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${ProjectName}-task-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -209,10 +205,6 @@ Resources:
   # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn: 
-      - PublicSubnet1
-      - PublicSubnet2
-      - ALBSecurityGroup
     Properties:
       Name: !Sub ${ProjectName}-alb
       Scheme: internet-facing
@@ -225,7 +217,6 @@ Resources:
 
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    DependsOn: VPC
     Properties:
       Name: !Sub ${ProjectName}-tg
       Port: 8080
@@ -243,9 +234,6 @@ Resources:
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    DependsOn: 
-      - ApplicationLoadBalancer
-      - ALBTargetGroup
     Properties:
       DefaultActions:
         - Type: forward
@@ -254,14 +242,9 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-  # ECS Task Definition (with all dependencies)
+  # ECS Task Definition
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
-    DependsOn: 
-      - ECSTaskExecutionRole
-      - ECSTaskRole
-      - CloudWatchLogGroup
-      - ECRRepository
     Properties:
       Family: !Sub ${ProjectName}-task-def
       NetworkMode: awsvpc
@@ -300,13 +283,10 @@ Resources:
             Retries: 3
             StartPeriod: 90
 
-  # ECS Service (with all dependencies)
+  # ECS Service
   ECSService:
     Type: AWS::ECS::Service
-    DependsOn: 
-      - ALBListener
-      - ECSTaskDefinition
-      - ECSCluster
+    DependsOn: ALBListener
     Properties:
       ServiceName: !Sub ${ProjectName}-backend-service
       Cluster: !Ref ECSCluster
