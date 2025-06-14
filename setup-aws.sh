@@ -95,8 +95,8 @@ fi
 echo "🔐 Logging in to ECR..."
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
 
-echo "🏗️ Building Docker image..."
-docker build -f Dockerfile.aws -t $ECR_URI:latest .
+echo "🏗️ Building Docker image for AMD64 platform..."
+docker build --platform linux/amd64 -f Dockerfile.aws -t $ECR_URI:latest .
 
 echo "📤 Pushing image to ECR..."
 docker push $ECR_URI:latest
