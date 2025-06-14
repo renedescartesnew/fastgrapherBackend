@@ -32,3 +32,17 @@ docker push $ECR_URI:latest
 
 echo "✅ Initial image pushed successfully!"
 echo "ECR URI: $ECR_URI"
+
+# Wait a moment for the image to be available
+echo "⏳ Waiting for image to be available..."
+sleep 10
+
+# Force ECS service to update with new image
+echo "🔄 Forcing ECS service update..."
+aws ecs update-service \
+    --cluster ${PROJECT_NAME}-cluster \
+    --service ${PROJECT_NAME}-backend-service \
+    --force-new-deployment \
+    --region $AWS_REGION || echo "Service update will happen after stack creation"
+
+echo "✅ Deployment process completed!"

@@ -80,22 +80,44 @@ fi
 echo "✅ CloudFormation stack deployed successfully"
 
 # Push initial Docker image
-echo "🐳 Pushing initial Docker image..."
-chmod +x push-initial-image.sh
-./push-initial-image.sh
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to push initial Docker image"
-    exit 1
-fi
-
-# Get outputs
+echo "🐳 Building and pushing Docker image..."
 ECR_URI=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --query 'Stacks[0].Outputs[?OutputKey==`ECRRepositoryURI`].OutputValue' \
     --output text \
     --region $AWS_REGION)
 
+if [ -z "$ECR_URI" ]; then
+    echo "❌ Could not get ECR URI from CloudFormation outputs."
+    exit 1
+fi
+
+echo "🔐 Logging in to ECR..."
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
+
+echo "🏗️ Building Docker image..."
+docker build -f Dockerfile.aws -t $ECR_URI:latest .
+
+echo "📤 Pushing image to ECR..."
+docker push $ECR_URI:latest
+
+echo "✅ Image pushed successfully!"
+
+# Now scale up the ECS service
+echo "🔄 Scaling up ECS service..."
+aws ecs update-service \
+    --cluster ${PROJECT_NAME}-cluster \
+    --service ${PROJECT_NAME}-backend-service \
+    --desired-count 1 \
+    --region $AWS_REGION
+
+echo "⏳ Waiting for service to become stable..."
+aws ecs wait services-stable \
+    --cluster ${PROJECT_NAME}-cluster \
+    --services ${PROJECT_NAME}-backend-service \
+    --region $AWS_REGION
+
+# Get outputs
 ALB_DNS=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
@@ -126,3 +148,5 @@ echo "   curl http://$ALB_DNS/api/health"
 echo ""
 echo "🚀 Your application will be available at:"
 echo "   http://$ALB_DNS"
+echo ""
+echo "⚠️  Note: It may take a few minutes for the load balancer to show the application as healthy."

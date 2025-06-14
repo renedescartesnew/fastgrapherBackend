@@ -254,8 +254,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '256'
-      Memory: '512'
+      Cpu: '512'
+      Memory: '1024'
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSTaskRole.Arn
       ContainerDefinitions:
@@ -283,11 +283,11 @@ Resources:
               - CMD-SHELL
               - curl -f http://localhost:8080/api/health || exit 1
             Interval: 30
-            Timeout: 5
+            Timeout: 10
             Retries: 3
-            StartPeriod: 90
+            StartPeriod: 120
 
-  # ECS Service
+  # ECS Service (initially with 0 desired count)
   ECSService:
     Type: AWS::ECS::Service
     DependsOn: ALBListener
@@ -296,7 +296,7 @@ Resources:
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref ECSTaskDefinition
       LaunchType: FARGATE
-      DesiredCount: 1
+      DesiredCount: 0
       NetworkConfiguration:
         AwsvpcConfiguration:
           SecurityGroups:
@@ -309,10 +309,10 @@ Resources:
         - ContainerName: !Sub ${ProjectName}-backend
           ContainerPort: 8080
           TargetGroupArn: !Ref ALBTargetGroup
-      HealthCheckGracePeriodSeconds: 120
+      HealthCheckGracePeriodSeconds: 300
       DeploymentConfiguration:
         MaximumPercent: 200
-        MinimumHealthyPercent: 50
+        MinimumHealthyPercent: 0
 
 Outputs:
   LoadBalancerDNS:
