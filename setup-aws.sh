@@ -17,6 +17,12 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker is not installed. Please install it first."
+    exit 1
+fi
+
 # Check if user is logged in to AWS
 if ! aws sts get-caller-identity &> /dev/null; then
     echo "❌ Please configure AWS CLI with 'aws configure' first."
@@ -28,7 +34,7 @@ echo "✅ AWS CLI is configured"
 # Check if stack exists and its status
 STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
 
-if [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
+if [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ]; then
     echo "🧹 Found failed stack in $STACK_STATUS state. Cleaning up..."
     aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION
     echo "⏳ Waiting for stack deletion to complete..."
@@ -47,14 +53,18 @@ aws cloudformation deploy \
 
 echo "✅ CloudFormation stack deployed successfully"
 
-# Get ECR repository URI
+# Push initial Docker image
+echo "🐳 Pushing initial Docker image..."
+chmod +x push-initial-image.sh
+./push-initial-image.sh
+
+# Get outputs
 ECR_URI=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --query 'Stacks[0].Outputs[?OutputKey==`ECRRepositoryURI`].OutputValue' \
     --output text \
     --region $AWS_REGION)
 
-# Get Load Balancer DNS
 ALB_DNS=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
@@ -76,5 +86,8 @@ echo "   - Load Balancer: http://$ALB_DNS"
 echo "   - ECS Cluster: ${PROJECT_NAME}-cluster"
 echo "   - ECS Service: ${PROJECT_NAME}-backend-service"
 echo ""
-echo "🔧 To view your application once deployed:"
+echo "🔧 To view your application:"
 echo "   curl http://$ALB_DNS/api/health"
+echo ""
+echo "🚀 Your application should be available at:"
+echo "   http://$ALB_DNS"

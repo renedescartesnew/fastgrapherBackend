@@ -1,23 +1,16 @@
+
 steps:
-  # Build the Docker image
+  # Build the Docker image with timeout extension
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', 
-           '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:$SHORT_SHA',
-           '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:latest',
-           '.']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend', '.']
     timeout: '1200s'
-    id: build
     
-  # Push the Docker image
+  # Push the Docker image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:$SHORT_SHA']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']
     timeout: '600s'
     
-  # Push latest tag
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$SHORT_SHA']
-    
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run with optimized settings
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: 
@@ -25,7 +18,7 @@ steps:
       - 'deploy'
       - 'backend-fastgrapher-service'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -63,11 +56,9 @@ steps:
       - '80'
       - '--cpu-throttling'
       - '--startup-cpu-boost'
-    id: deploy
 
 options:
   machineType: 'E2_HIGHCPU_8'
   
-images: 
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:$SHORT_SHA'
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/$_IMAGE_NAME:latest'
+# Store the image in Artifact Registry
+images: ['us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend']
