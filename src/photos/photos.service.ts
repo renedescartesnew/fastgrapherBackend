@@ -108,6 +108,8 @@ export class PhotosService {
       let isGroupPhoto = false;
       let isBlurry = false;
       let blurScore = 0;
+      let isCentered = true;
+      let centeredConfidence = 0;
       
       try {
         if (photoData.mimetype && photoData.mimetype.startsWith('image/')) {
@@ -126,6 +128,11 @@ export class PhotosService {
           isBlurry = blurResult.isBlurry;
           blurScore = blurResult.blurScore;
           this.logger.log(`Blur detection result: ${isBlurry ? 'blurry' : 'sharp'} (score: ${blurScore})`);
+
+          const centeredResult = await this.eyeDetectionService.detectCenteredObject(newFilePath);
+          isCentered = centeredResult.isCentered;
+          centeredConfidence = centeredResult.confidence;
+          this.logger.log(`Centered detection result: ${isCentered ? 'centered' : 'not centered'} (confidence: ${centeredConfidence})`);
         } else {
           this.logger.log(`Skipping AI detection for non-image file: ${photoData.mimetype}`);
         }
@@ -146,6 +153,8 @@ export class PhotosService {
         isGroupPhoto: isGroupPhoto,
         isBlurry: isBlurry,
         blurScore: blurScore,
+        isCentered: isCentered,
+        centeredPath: isCentered ? null : newFilename,
         createdAt: photoData.createdAt || new Date(),
       });
       
@@ -253,5 +262,9 @@ export class PhotosService {
     }
     
     await this.photoModel.deleteMany({ project: projectId }).exec();
+  }
+
+  async findNotCenteredByProject(projectId: string): Promise<PhotoDocument[]> {
+    return this.photoModel.find({ project: projectId, isCentered: false }).sort({ createdAt: -1 }).exec();
   }
 }

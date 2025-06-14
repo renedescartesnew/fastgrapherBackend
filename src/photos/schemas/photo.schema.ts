@@ -47,6 +47,12 @@ export class Photo {
 
   @Prop({ default: 0 })
   blurScore: number;
+
+  @Prop({ default: true })
+  isCentered: boolean;
+
+  @Prop({ default: null })
+  centeredPath: string;
 }
 
 export const PhotoSchema = SchemaFactory.createForClass(Photo);

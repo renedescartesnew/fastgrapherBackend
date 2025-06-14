@@ -87,6 +87,19 @@ export class PhotosController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('project/:projectId/not-centered')
+  async findNotCenteredByProject(@Param('projectId') projectId: string, @CurrentUser() user: User) {
+    this.logger.log(`Finding not-centered photos for project: ${projectId}`);
+    try {
+      const photos = await this.photosService.findNotCenteredByProject(projectId);
+      return photos;
+    } catch (error) {
+      this.logger.error(`Error finding not-centered photos for project ${projectId}:`, error);
+      throw error;
+    }
+  }
+
   @Get('file/:filename')
   async serveFile(@Param('filename') filename: string, @Res() res: Response) {
     try {
