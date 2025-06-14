@@ -1,3 +1,4 @@
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -40,6 +41,12 @@ export class Photo {
 
   @Prop({ default: null })
   groupsPath: string;
+
+  @Prop({ default: false })
+  isBlurry: boolean;
+
+  @Prop({ default: 0 })
+  blurScore: number;
 }
 
 export const PhotoSchema = SchemaFactory.createForClass(Photo);

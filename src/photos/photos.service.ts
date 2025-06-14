@@ -106,6 +106,8 @@ export class PhotosService {
       let hasPersonWithBothEyesClosed = false;
       let hasPersonNotLookingAtCamera = false;
       let isGroupPhoto = false;
+      let isBlurry = false;
+      let blurScore = 0;
       
       try {
         if (photoData.mimetype && photoData.mimetype.startsWith('image/')) {
@@ -119,6 +121,11 @@ export class PhotosService {
           
           isGroupPhoto = await this.eyeDetectionService.detectGroupPhoto(newFilePath);
           this.logger.log(`Group photo detection result: ${isGroupPhoto ? 'group photo' : 'individual photo'}`);
+          
+          const blurResult = await this.eyeDetectionService.detectBlur(newFilePath);
+          isBlurry = blurResult.isBlurry;
+          blurScore = blurResult.blurScore;
+          this.logger.log(`Blur detection result: ${isBlurry ? 'blurry' : 'sharp'} (score: ${blurScore})`);
         } else {
           this.logger.log(`Skipping AI detection for non-image file: ${photoData.mimetype}`);
         }
@@ -137,6 +144,8 @@ export class PhotosService {
         hasClosedEyes: hasPersonWithBothEyesClosed,
         notLookingAtCamera: hasPersonNotLookingAtCamera,
         isGroupPhoto: isGroupPhoto,
+        isBlurry: isBlurry,
+        blurScore: blurScore,
         createdAt: photoData.createdAt || new Date(),
       });
       
@@ -201,6 +210,10 @@ export class PhotosService {
 
   async findGroupPhotosByProject(projectId: string): Promise<PhotoDocument[]> {
     return this.photoModel.find({ project: projectId, isGroupPhoto: true }).sort({ createdAt: -1 }).exec();
+  }
+
+  async findBlurryByProject(projectId: string): Promise<PhotoDocument[]> {
+    return this.photoModel.find({ project: projectId, isBlurry: true }).sort({ createdAt: -1 }).exec();
   }
 
   async remove(photoId: string): Promise<PhotoDocument> {

@@ -74,6 +74,19 @@ export class PhotosController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('project/:projectId/blur')
+  async findBlurryByProject(@Param('projectId') projectId: string, @CurrentUser() user: User) {
+    this.logger.log(`Finding blurry photos for project: ${projectId}`);
+    try {
+      const photos = await this.photosService.findBlurryByProject(projectId);
+      return photos;
+    } catch (error) {
+      this.logger.error(`Error finding blurry photos for project ${projectId}:`, error);
+      throw error;
+    }
+  }
+
   @Get('file/:filename')
   async serveFile(@Param('filename') filename: string, @Res() res: Response) {
     try {
