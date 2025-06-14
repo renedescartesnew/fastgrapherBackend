@@ -206,7 +206,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub ${ProjectName}-alb
+      Name: !Sub ${ProjectName}-alb-${AWS::StackId}
       Scheme: internet-facing
       Type: application
       SecurityGroups:
@@ -218,7 +218,7 @@ Resources:
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub ${ProjectName}-tg
+      Name: !Sub ${ProjectName}-tg-${AWS::StackId}
       Port: 8080
       Protocol: HTTP
       VpcId: !Ref VPC
