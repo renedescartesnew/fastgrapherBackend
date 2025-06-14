@@ -14,7 +14,7 @@ Parameters:
     Description: Environment name
 
 Resources:
-  # VPC and Networking
+  # VPC and Networking (with explicit ordering)
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -24,28 +24,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-vpc
-
-  PublicSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs '']
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-public-subnet-1
-
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select [1, !GetAZs '']
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-public-subnet-2
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -60,8 +38,33 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-subnet-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-subnet-2
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
+    DependsOn: VPC
     Properties:
       VpcId: !Ref VPC
       Tags:
@@ -88,9 +91,10 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
-  # Security Groups
+  # Security Groups (simplified and explicit dependencies)
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DependsOn: VPC
     Properties:
       GroupDescription: Security group for Application Load Balancer
       VpcId: !Ref VPC
@@ -109,6 +113,7 @@ Resources:
 
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DependsOn: ALBSecurityGroup
     Properties:
       GroupDescription: Security group for ECS tasks
       VpcId: !Ref VPC
@@ -121,7 +126,7 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-ecs-sg
 
-  # ECR Repository
+  # ECR Repository (no dependencies needed)
   ECRRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -147,17 +152,18 @@ Resources:
             ]
           }
 
-  # CloudWatch Log Group (created early to avoid dependency issues)
+  # CloudWatch Log Group
   CloudWatchLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /ecs/${ProjectName}
       RetentionInDays: 14
 
-  # IAM Roles (created before ECS resources)
+  # IAM Roles (simplified)
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${ProjectName}-task-execution-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -168,7 +174,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       Policies:
-        - PolicyName: ECRAccess
+        - PolicyName: ECRAndLogsAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -178,16 +184,14 @@ Resources:
                   - ecr:BatchCheckLayerAvailability
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
-                Resource: '*'
-              - Effect: Allow
-                Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !GetAtt CloudWatchLogGroup.Arn
+                Resource: '*'
 
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${ProjectName}-task-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -201,15 +205,14 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub ${ProjectName}-cluster
-      CapacityProviders:
-        - FARGATE
-      DefaultCapacityProviderStrategy:
-        - CapacityProvider: FARGATE
-          Weight: 1
 
-  # Application Load Balancer (created before ECS service)
+  # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: 
+      - PublicSubnet1
+      - PublicSubnet2
+      - ALBSecurityGroup
     Properties:
       Name: !Sub ${ProjectName}-alb
       Scheme: internet-facing
@@ -222,6 +225,7 @@ Resources:
 
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: VPC
     Properties:
       Name: !Sub ${ProjectName}-tg
       Port: 8080
@@ -233,12 +237,15 @@ Resources:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 5
+      UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: '200'
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: 
+      - ApplicationLoadBalancer
+      - ALBTargetGroup
     Properties:
       DefaultActions:
         - Type: forward
@@ -247,20 +254,21 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-  # ECS Task Definition
+  # ECS Task Definition (with all dependencies)
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn: 
       - ECSTaskExecutionRole
       - ECSTaskRole
       - CloudWatchLogGroup
+      - ECRRepository
     Properties:
       Family: !Sub ${ProjectName}-task-def
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '512'
-      Memory: '1024'
+      Cpu: '256'
+      Memory: '512'
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSTaskRole.Arn
       ContainerDefinitions:
@@ -288,16 +296,17 @@ Resources:
               - CMD-SHELL
               - curl -f http://localhost:8080/api/health || exit 1
             Interval: 30
-            Timeout: 10
+            Timeout: 5
             Retries: 3
-            StartPeriod: 60
+            StartPeriod: 90
 
-  # ECS Service (created last with proper dependencies)
+  # ECS Service (with all dependencies)
   ECSService:
     Type: AWS::ECS::Service
     DependsOn: 
       - ALBListener
       - ECSTaskDefinition
+      - ECSCluster
     Properties:
       ServiceName: !Sub ${ProjectName}-backend-service
       Cluster: !Ref ECSCluster
@@ -316,7 +325,10 @@ Resources:
         - ContainerName: !Sub ${ProjectName}-backend
           ContainerPort: 8080
           TargetGroupArn: !Ref ALBTargetGroup
-      HealthCheckGracePeriodSeconds: 300
+      HealthCheckGracePeriodSeconds: 120
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
 
 Outputs:
   LoadBalancerDNS:
