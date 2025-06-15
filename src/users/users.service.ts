@@ -37,8 +37,31 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserDocument> {
-    const user = await this.userModel.findOne({ email }).exec();
-    return user;
+    try {
+      console.log('=== UsersService.findByEmail ===');
+      console.log('Searching for email:', email);
+      console.log('User model available:', !!this.userModel);
+      
+      const user = await this.userModel.findOne({ email }).exec();
+      console.log('Database query completed');
+      console.log('User found:', user ? 'YES' : 'NO');
+      
+      if (user) {
+        console.log('User details:', {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          verifiedAt: user.verifiedAt,
+          isActive: user.isActive,
+          hasPassword: !!user.password
+        });
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('Error in findByEmail:', error);
+      throw error;
+    }
   }
 
   async findByVerificationToken(token: string): Promise<UserDocument> {
