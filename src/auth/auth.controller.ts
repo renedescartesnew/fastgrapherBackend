@@ -19,7 +19,19 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req) {
-    return this.authService.login(req.user);
+    try {
+      console.log('=== Auth Controller Login ===');
+      console.log('Request body:', req.body);
+      console.log('User from LocalAuthGuard:', req.user);
+      
+      const result = await this.authService.login(req.user);
+      console.log('Login successful, returning response');
+      return result;
+    } catch (error) {
+      console.error('Login controller error:', error);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Post('forgot-password')

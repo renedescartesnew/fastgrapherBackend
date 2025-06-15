@@ -1,4 +1,3 @@
-
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -21,44 +20,87 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     try {
+      console.log('=== validateUser called ===');
+      console.log('Email:', email);
+      console.log('Password length:', password?.length);
+      
       const user = await this.usersService.findByEmail(email);
+      console.log('User found:', user ? 'YES' : 'NO');
       
       if (!user) {
+        console.log('User not found, returning null');
         return null;
       }
       
+      console.log('User details:', {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        verifiedAt: user.verifiedAt,
+        isActive: user.isActive
+      });
+      
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log('Password valid:', isPasswordValid);
       
       if (!isPasswordValid) {
+        console.log('Invalid password, returning null');
         return null;
       }
       
       if (!user.verifiedAt) {
+        console.log('Email not verified, throwing error');
         throw new UnauthorizedException('Please verify your email before logging in');
       }
       
       // Handle both Document and plain object
       const userObj = user.toObject ? user.toObject() : user;
       const { password: _, ...result } = userObj;
+      console.log('validateUser successful, returning user object');
       return result;
     } catch (error) {
-      console.error('Error validating user:', error);
+      console.error('Error in validateUser:', error);
+      console.error('Error stack:', error.stack);
       throw error;
     }
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user._id };
-    
-    return {
-      token: this.jwtService.sign(payload),
-      user: {
-        id: user._id,
+    try {
+      console.log('=== login called ===');
+      console.log('User object received:', {
+        _id: user._id,
         email: user.email,
-        name: user.name,
-        avatar: user.avatar,
-      },
-    };
+        name: user.name
+      });
+      
+      const payload = { email: user.email, sub: user._id };
+      console.log('JWT payload:', payload);
+      
+      const token = this.jwtService.sign(payload);
+      console.log('JWT token generated successfully');
+      
+      const response = {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+        },
+      };
+      
+      console.log('Login response prepared:', {
+        ...response,
+        token: 'JWT_TOKEN_GENERATED'
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error in login method:', error);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   }
 
   async register(createUserDto: CreateUserDto) {
