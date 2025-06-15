@@ -49,6 +49,12 @@ async function bootstrap() {
           return callback(null, true);
         }
         
+        // Allow any localhost origin (covers different IP addresses and ports)
+        if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
+          console.log(`CORS: Allowing localhost/local network origin: ${origin}`);
+          return callback(null, true);
+        }
+        
         if (allowedOrigins.includes(origin)) {
           console.log(`CORS: Allowing origin: ${origin}`);
           return callback(null, true);
@@ -99,7 +105,8 @@ async function bootstrap() {
       'https://francemed-df379.web.app',
       'https://www.fastgrapher.com',
       'https://fastgrapher.com',
-      'https://backend-fastgrapher-service-741083673218.us-central1.run.app'
+      'https://backend-fastgrapher-service-741083673218.us-central1.run.app',
+      'Any localhost or 192.168.x.x origin'
     ]);
     
     // IMPORTANT: Listen on 0.0.0.0 for Cloud Run compatibility
