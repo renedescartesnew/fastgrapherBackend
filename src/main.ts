@@ -14,6 +14,13 @@ async function bootstrap() {
     console.log('Port:', process.env.PORT);
     console.log('Working directory:', process.cwd());
     
+    // Log environment variables (without sensitive data)
+    console.log('=== ENVIRONMENT VARIABLES CHECK ===');
+    console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'NOT SET');
+    console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+    console.log('MAIL_HOST:', process.env.MAIL_HOST ? 'SET' : 'NOT SET');
+    console.log('FRONTEND_URL:', process.env.FRONTEND_URL || 'NOT SET');
+    
     // Ensure uploads directory exists
     const uploadsDir = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadsDir)) {
@@ -114,11 +121,9 @@ async function bootstrap() {
     
     console.log(`✅ Application is running on http://0.0.0.0:${port}`);
     console.log(`✅ Health check available at: http://0.0.0.0:${port}/api/health`);
+    console.log(`✅ Database health check available at: http://0.0.0.0:${port}/api/health/database`);
     console.log('✅ API routes available at: http://0.0.0.0:${port}/api/*');
     console.log('=== Server Started Successfully ===');
-    
-    // Test basic functionality
-    console.log('Testing server response...');
     
   } catch (error) {
     console.error('=== FATAL ERROR: Failed to start server ===');

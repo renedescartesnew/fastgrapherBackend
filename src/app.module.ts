@@ -17,9 +17,29 @@ import { PhotosModule } from './photos/photos.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(
-      'mongodb+srv://NarekBrc:Halabyan_brc@breakroomcupcluster.uudts.mongodb.net/fastgrapher?retryWrites=true&w=majority&appName=breakRoomCupCluster',
-    ),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const mongoUri = configService.get<string>('MONGO_URI') || 
+          'mongodb+srv://renedescartesnew:FHUwCVuj5y6SL8nW@breakroomcupcluster.uudts.mongodb.net/?retryWrites=true&w=majority&appName=breakRoomCupCluster';
+        
+        console.log('=== MONGODB CONNECTION SETUP ===');
+        console.log('MONGO_URI from env:', configService.get<string>('MONGO_URI') ? 'SET' : 'NOT SET');
+        console.log('Using MONGO_URI:', mongoUri.replace(/:[^@]+@/, ':***@')); // Hide password in logs
+        
+        return {
+          uri: mongoUri,
+          retryWrites: true,
+          w: 'majority',
+          appName: 'breakRoomCupCluster',
+          serverSelectionTimeoutMS: 10000,
+          socketTimeoutMS: 45000,
+          bufferCommands: false,
+          bufferMaxEntries: 0,
+        };
+      },
+      inject: [ConfigService],
+    }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -48,7 +68,7 @@ import { PhotosModule } from './photos/photos.module';
             },
           },
           preview: false,
-          verifyTransporter: false, // Disable transporter verification to avoid the error
+          verifyTransporter: false,
         };
       },
       inject: [ConfigService],

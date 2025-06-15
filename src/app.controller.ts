@@ -1,31 +1,67 @@
 
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    @InjectConnection() private readonly connection: Connection,
+  ) {}
 
   @Get()
   getHello(): string {
-    console.log('Root endpoint hit');
     return this.appService.getHello();
   }
 
   @Get('health')
   getHealth() {
-    console.log('Health check endpoint hit');
-    const healthData = {
+    return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      port: process.env.PORT || '8080',
-      memory: process.memoryUsage(),
-      cors: 'enabled',
-      message: 'FastGrapher backend is running'
+      service: 'FastGrapher Backend'
     };
-    console.log('Health check data:', healthData);
-    return healthData;
+  }
+
+  @Get('health/database')
+  async getDatabaseHealth() {
+    try {
+      console.log('=== DATABASE HEALTH CHECK ===');
+      console.log('Connection state:', this.connection.readyState);
+      console.log('Database name:', this.connection.name);
+      console.log('Host:', this.connection.host);
+      
+      // Test database connection with a simple operation
+      const adminDb = this.connection.db.admin();
+      const result = await adminDb.ping();
+      
+      console.log('Database ping result:', result);
+      
+      return {
+        status: 'ok',
+        database: {
+          connected: this.connection.readyState === 1,
+          name: this.connection.name,
+          host: this.connection.host,
+          readyState: this.connection.readyState,
+          ping: result
+        },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Database health check failed:', error);
+      
+      return {
+        status: 'error',
+        database: {
+          connected: false,
+          error: error.message,
+          readyState: this.connection.readyState
+        },
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
