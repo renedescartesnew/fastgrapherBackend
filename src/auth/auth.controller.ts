@@ -16,6 +16,30 @@ export class AuthController {
     return this.authService.register(createUserDto);
   }
 
+  @Get('debug-user/:email')
+  async debugUser(@Param('email') email: string) {
+    try {
+      console.log('=== DEBUG USER ENDPOINT ===');
+      console.log('Looking for email:', email);
+      
+      const user = await this.authService.debugFindUser(email);
+      
+      return {
+        found: !!user,
+        email: user?.email || null,
+        verified: user?.verifiedAt ? true : false,
+        hasPassword: user?.password ? true : false,
+        isActive: user?.isActive || false
+      };
+    } catch (error) {
+      console.error('Debug user error:', error);
+      return {
+        error: error.message,
+        found: false
+      };
+    }
+  }
+
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req) {

@@ -18,6 +18,32 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
+  async debugFindUser(email: string) {
+    try {
+      console.log('=== debugFindUser called ===');
+      console.log('Email:', email);
+      
+      const user = await this.usersService.findByEmail(email);
+      console.log('User found:', user ? 'YES' : 'NO');
+      
+      if (user) {
+        console.log('User details:', {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          verifiedAt: user.verifiedAt,
+          isActive: user.isActive,
+          hasPassword: !!user.password
+        });
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('Error in debugFindUser:', error);
+      throw error;
+    }
+  }
+
   async validateUser(email: string, password: string): Promise<any> {
     try {
       console.log('=== validateUser called ===');
