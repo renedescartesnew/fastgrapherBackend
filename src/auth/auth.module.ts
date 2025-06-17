@@ -16,10 +16,18 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET') || 'your-super-secret-jwt-key-change-in-production';
+        
+        console.log('=== JWT MODULE SETUP ===');
+        console.log('JWT_SECRET from env:', configService.get<string>('JWT_SECRET') ? 'SET' : 'NOT SET');
+        console.log('Using fallback secret:', !configService.get<string>('JWT_SECRET'));
+        
+        return {
+          secret: jwtSecret,
+          signOptions: { expiresIn: '1d' },
+        };
+      },
     }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],

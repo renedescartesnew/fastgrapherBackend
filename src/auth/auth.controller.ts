@@ -1,19 +1,34 @@
 
-import { Body, Controller, Get, Param, Post, UseGuards, Request, Redirect } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('health')
+  healthCheck() {
+    return { status: 'ok', service: 'auth', timestamp: new Date().toISOString() };
+  }
+
   @Post('register')
-  register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+  async register(@Body() createUserDto: CreateUserDto) {
+    try {
+      console.log('=== REGISTER ENDPOINT ===');
+      console.log('Registration data:', { email: createUserDto.email, name: createUserDto.name });
+      
+      const result = await this.authService.register(createUserDto);
+      console.log('Registration successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Registration error:', error.message);
+      throw error;
+    }
   }
 
   @Get('debug-user/:email')
@@ -40,33 +55,41 @@ export class AuthController {
     }
   }
 
-  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {
+  async login(@Body() loginDto: LoginDto) {
     try {
-      console.log('=== Auth Controller Login Start ===');
-      console.log('Request body:', req.body);
-      console.log('User from LocalAuthGuard:', req.user);
-      console.log('User object keys:', req.user ? Object.keys(req.user) : 'no user');
+      console.log('=== AUTH CONTROLLER LOGIN START ===');
+      console.log('Login attempt for email:', loginDto.email);
+      console.log('Password provided:', !!loginDto.password);
       
-      if (!req.user) {
-        console.error('No user object from LocalAuthGuard');
-        throw new Error('Authentication failed - no user object');
+      // Validate input
+      if (!loginDto.email || !loginDto.password) {
+        console.error('Missing credentials');
+        throw new UnauthorizedException('Email and password are required');
       }
+
+      // Validate user credentials
+      console.log('Calling validateUser...');
+      const validatedUser = await this.authService.validateUser(loginDto.email, loginDto.password);
       
-      console.log('Calling authService.login...');
-      const result = await this.authService.login(req.user);
-      console.log('Login successful, returning response');
-      console.log('Result keys:', Object.keys(result));
+      if (!validatedUser) {
+        console.log('User validation failed');
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      console.log('User validated, generating JWT...');
+      const result = await this.authService.login(validatedUser);
       
+      console.log('Login successful, returning token');
       return result;
+      
     } catch (error) {
-      console.error('=== Login Controller Error ===');
-      console.error('Error type:', typeof error);
-      console.error('Error constructor:', error.constructor.name);
+      console.error('=== AUTH CONTROLLER LOGIN ERROR ===');
+      console.error('Error type:', error.constructor.name);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
-      console.error('Full error object:', error);
+      
+      // Re-throw the error to let NestJS handle it properly
       throw error;
     }
   }

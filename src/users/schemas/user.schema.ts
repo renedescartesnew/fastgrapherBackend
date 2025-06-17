@@ -6,7 +6,7 @@ export type UserDocument = User & Document;
 
 @Schema({ 
   timestamps: true,
-  collection: 'users' // Explicitly set collection name
+  collection: 'users' // Explicitly set collection name to 'users'
 })
 export class User {
   @Prop({ required: true, unique: true })
@@ -42,6 +42,9 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Add only necessary indexes to avoid duplicates
+// Add indexes for performance (remove duplicate email index)
 UserSchema.index({ verificationToken: 1 });
 UserSchema.index({ resetPasswordToken: 1 });
+
+// Ensure we're working with the fastgrapher database
+UserSchema.set('collection', 'users');
