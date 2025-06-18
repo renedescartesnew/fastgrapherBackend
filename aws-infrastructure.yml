@@ -1,4 +1,3 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'FastGrapher Backend Infrastructure'
 
@@ -12,6 +11,18 @@ Parameters:
     Type: String
     Default: production
     Description: Environment name
+
+  MongoUri:
+    Type: String
+    Default: 'mongodb+srv://placeholder:password@cluster.mongodb.net/fastgrapher?retryWrites=true&w=majority'
+    Description: MongoDB connection URI
+    NoEcho: true
+
+  JwtSecret:
+    Type: String
+    Default: 'your-super-secret-jwt-key-change-this-in-production'
+    Description: JWT secret for authentication
+    NoEcho: true
 
 Resources:
   # VPC
@@ -272,6 +283,10 @@ Resources:
               Value: '8080'
             - Name: HOST
               Value: '0.0.0.0'
+            - Name: MONGO_URI
+              Value: !Ref MongoUri
+            - Name: JWT_SECRET
+              Value: !Ref JwtSecret
           LogConfiguration:
             LogDriver: awslogs
             Options:
