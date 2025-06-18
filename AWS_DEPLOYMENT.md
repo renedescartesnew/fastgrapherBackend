@@ -14,7 +14,6 @@ This guide will help you deploy the FastGrapher backend to AWS using ECS Fargate
 ### 1. Deploy AWS Infrastructure
 
 ```bash
-cd server
 chmod +x setup-aws.sh
 ./setup-aws.sh
 ```
