@@ -1,47 +1,47 @@
-name: Deploy to Google Cloud Run
+# name: Deploy to Google Cloud Run
 
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
+# on:
+#   push:
+#     branches: ["main"]
+#   workflow_dispatch:
 
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: backend-fastgrapher-service
-  REGION: us-central1
-  IMAGE_NAME: fastgrapher-backend
+# env:
+#   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#   SERVICE_NAME: backend-fastgrapher-service
+#   REGION: us-central1
+#   IMAGE_NAME: fastgrapher-backend
 
-permissions:
-  contents: 'read'
-  id-token: 'write'
+# permissions:
+#   contents: 'read'
+#   id-token: 'write'
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 20
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          create_credentials_file: true
+#       - name: Authenticate to Google Cloud
+#         uses: google-github-actions/auth@v2
+#         with:
+#           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+#           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+#           create_credentials_file: true
 
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
+#       - name: Set up Google Cloud CLI
+#         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build and Deploy
-        run: |-
-          # Use short SHA for tagging
-          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+#       - name: Build and Deploy
+#         run: |-
+#           # Use short SHA for tagging
+#           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           
-          # Submit build using cloudbuild.yaml
-          gcloud builds submit \
-            --config=cloudbuild.yaml \
-            --substitutions=SHORT_SHA=$SHORT_SHA \
-            --project=$PROJECT_ID \
-            --quiet
+#           # Submit build using cloudbuild.yaml
+#           gcloud builds submit \
+#             --config=cloudbuild.yaml \
+#             --substitutions=SHORT_SHA=$SHORT_SHA \
+#             --project=$PROJECT_ID \
+#             --quiet

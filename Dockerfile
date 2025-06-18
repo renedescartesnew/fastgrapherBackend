@@ -47,8 +47,7 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-# Create non-root user
-RUN groupadd -g 1001 node && useradd -r -u 1001 -g node node
+# Use existing node user (no need to create it)
 RUN chown -R node:node /usr/src/app
 USER node
 
