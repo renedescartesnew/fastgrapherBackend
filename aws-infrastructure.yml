@@ -1,4 +1,3 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'FastGrapher Backend Infrastructure'
 
@@ -291,14 +290,6 @@ Resources:
               awslogs-group: !Ref CloudWatchLogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
-          HealthCheck:
-            Command:
-              - CMD-SHELL
-              - curl -f http://localhost:8080/api/health || exit 1
-            Interval: 30
-            Timeout: 10
-            Retries: 3
-            StartPeriod: 120
 
   # ECS Service (initially with 0 desired count)
   ECSService:
