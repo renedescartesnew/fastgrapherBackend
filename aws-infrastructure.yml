@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'FastGrapher Backend Infrastructure'
 
@@ -262,8 +263,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '512'
-      Memory: '1024'
+      Cpu: '1024'
+      Memory: '2048'
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSTaskRole.Arn
       ContainerDefinitions:
@@ -313,7 +314,7 @@ Resources:
         - ContainerName: !Sub ${ProjectName}-backend
           ContainerPort: 8080
           TargetGroupArn: !Ref ALBTargetGroup
-      HealthCheckGracePeriodSeconds: 300
+      HealthCheckGracePeriodSeconds: 600
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 0
