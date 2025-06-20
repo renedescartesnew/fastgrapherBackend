@@ -291,7 +291,7 @@ Resources:
       Certificates:
         - CertificateArn: !Ref SSLCertificateArn
 
-  # ECS Task Definition
+  # ECS Task Definition - UPDATED to include MONGO_URI and JWT_SECRET
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
