@@ -12,8 +12,16 @@ aws ecs describe-task-definition \
     --region us-east-1 \
     --query 'taskDefinition' > task-def-raw.json
 
-# Create a clean task definition with environment variables
-echo "✏️  Creating updated task definition..."
+# Get the actual role ARNs from the current task definition
+EXECUTION_ROLE_ARN=$(cat task-def-raw.json | jq -r '.executionRoleArn')
+TASK_ROLE_ARN=$(cat task-def-raw.json | jq -r '.taskRoleArn')
+
+echo "📋 Using Role ARNs:"
+echo "  Execution Role: $EXECUTION_ROLE_ARN"
+echo "  Task Role: $TASK_ROLE_ARN"
+
+# Create a clean task definition with CORRECTED environment variables
+echo "✏️  Creating updated task definition with proper MongoDB URI..."
 cat > task-def-fixed.json << 'EOF'
 {
   "family": "fastgrapher-task-def",
@@ -21,8 +29,8 @@ cat > task-def-fixed.json << 'EOF'
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
   "memory": "2048",
-  "executionRoleArn": "arn:aws:iam::479623627289:role/fastgrapher-infrastructure-ECSTaskExecutionRole-XXXXX",
-  "taskRoleArn": "arn:aws:iam::479623627289:role/fastgrapher-infrastructure-ECSTaskRole-XXXXX",
+  "executionRoleArn": "PLACEHOLDER_EXECUTION_ROLE",
+  "taskRoleArn": "PLACEHOLDER_TASK_ROLE",
   "containerDefinitions": [
     {
       "name": "fastgrapher-backend",
@@ -69,14 +77,14 @@ cat > task-def-fixed.json << 'EOF'
 }
 EOF
 
-# Get the actual role ARNs from the current task definition
-EXECUTION_ROLE_ARN=$(cat task-def-raw.json | jq -r '.executionRoleArn')
-TASK_ROLE_ARN=$(cat task-def-raw.json | jq -r '.taskRoleArn')
-
 # Update the task definition with correct role ARNs
 jq --arg exec_role "$EXECUTION_ROLE_ARN" --arg task_role "$TASK_ROLE_ARN" \
    '.executionRoleArn = $exec_role | .taskRoleArn = $task_role' \
    task-def-fixed.json > task-def-final.json
+
+echo "📝 Final task definition preview:"
+echo "MongoDB URI: mongodb+srv://renedescartesnew:***@breakroomcupcluster.uudts.mongodb.net/fastgrapher?retryWrites=true&w=majority"
+echo "JWT Secret: Set (hidden)"
 
 echo "🚀 Registering new task definition..."
 aws ecs register-task-definition \
@@ -111,5 +119,12 @@ ALB_DNS=$(aws cloudformation describe-stacks \
     --region us-east-1)
 
 echo "🔍 Testing health endpoint..."
-sleep 30  # Give it a moment to start
+sleep 60  # Give it more time to start up
 curl "http://$ALB_DNS/api/health" || echo "⚠️  Service may still be starting up..."
+
+echo "📊 Checking service status:"
+aws ecs describe-services \
+    --cluster fastgrapher-cluster \
+    --services fastgrapher-backend-service \
+    --region us-east-1 \
+    --query 'services[0].{Status:status,RunningCount:runningCount,DesiredCount:desiredCount,PendingCount:pendingCount}'
