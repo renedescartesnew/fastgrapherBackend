@@ -9,7 +9,7 @@ async function bootstrap() {
     
     // Enable CORS with more permissive settings
     app.enableCors({
-      origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'https://id-preview--14c7fd51-7c95-478e-91be-63f3152c2810.lovable.app', 'https://francemed-df379.web.app', 'https://www.fastgrapher.com', 'https://fastgrapher.com'],
+      origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'https://id-preview--14c7fd51-7c95-478e-91be-63f3152c2810.lovable.app', 'https://francemed-df379.firebaseapp.com/' ,'https://francemed-df379.web.app', 'https://www.fastgrapher.com', 'https://fastgrapher.com'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
