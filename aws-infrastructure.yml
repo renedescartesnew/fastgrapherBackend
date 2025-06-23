@@ -1,6 +1,5 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'FastGrapher Backend Infrastructure'
+Description: 'FastGrapher Backend Infrastructure with SSL/HTTPS Support'
 
 Parameters:
   ProjectName:
@@ -28,7 +27,7 @@ Parameters:
   SSLCertificateArn:
     Type: String
     Default: ''
-    Description: ARN of the SSL certificate for HTTPS (optional - leave empty for HTTP only)
+    Description: 'ARN of the SSL certificate for HTTPS (e.g., arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012). Leave empty for HTTP only.'
 
 Conditions:
   HasSSLCertificate: !Not [!Equals [!Ref SSLCertificateArn, '']]
@@ -111,7 +110,7 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
-  # Security Groups
+  # Security Groups - Updated for HTTPS
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -122,12 +121,14 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+          Description: HTTP traffic
         - !If
           - HasSSLCertificate
           - IpProtocol: tcp
             FromPort: 443
             ToPort: 443
             CidrIp: 0.0.0.0/0
+            Description: HTTPS traffic
           - !Ref AWS::NoValue
       Tags:
         - Key: Name
@@ -225,7 +226,7 @@ Resources:
     Properties:
       ClusterName: !Sub ${ProjectName}-cluster
 
-  # Application Load Balancer
+  # Application Load Balancer - Enhanced for SSL
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -259,7 +260,7 @@ Resources:
       Matcher:
         HttpCode: '200'
 
-  # HTTP Listener - redirect to HTTPS if certificate is provided, otherwise forward
+  # HTTP Listener - Redirects to HTTPS if SSL certificate is provided
   ALBListenerHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -277,7 +278,7 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-  # HTTPS Listener (only created if SSL certificate is provided)
+  # HTTPS Listener - Only created when SSL certificate is provided
   ALBListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Condition: HasSSLCertificate
@@ -290,6 +291,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn: !Ref SSLCertificateArn
+      SslPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
 
   # ECS Task Definition - UPDATED to include MONGO_URI and JWT_SECRET
   ECSTaskDefinition:
@@ -372,10 +374,19 @@ Outputs:
 
   LoadBalancerHTTPSURL:
     Condition: HasSSLCertificate
-    Description: HTTPS URL of the load balancer
+    Description: HTTPS URL of the load balancer (available when SSL certificate is configured)
     Value: !Sub https://${ApplicationLoadBalancer.DNSName}
     Export:
       Name: !Sub ${AWS::StackName}-LoadBalancerHTTPSURL
+
+  SSLCertificateStatus:
+    Description: SSL Certificate configuration status
+    Value: !If 
+      - HasSSLCertificate
+      - !Sub 'SSL Certificate configured: ${SSLCertificateArn}'
+      - 'No SSL Certificate configured - HTTP only'
+    Export:
+      Name: !Sub ${AWS::StackName}-SSLStatus
   
   ECRRepositoryURI:
     Description: ECR Repository URI
