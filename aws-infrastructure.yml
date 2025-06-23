@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'FastGrapher Backend Infrastructure with SSL/HTTPS Support'
 
@@ -330,12 +331,10 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
 
-  # ECS Service
+  # ECS Service - Fixed DependsOn syntax
   ECSService:
     Type: AWS::ECS::Service
-    DependsOn: 
-      - ALBListenerHTTP
-      - !If [HasSSLCertificate, !Ref ALBListenerHTTPS, !Ref AWS::NoValue]
+    DependsOn: ALBListenerHTTP
     Properties:
       ServiceName: !Sub ${ProjectName}-backend-service
       Cluster: !Ref ECSCluster
