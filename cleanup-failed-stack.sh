@@ -7,7 +7,7 @@ set -e
 
 PROJECT_NAME="fastgrapher"
 AWS_REGION="us-east-1"
-STACK_NAME="${PROJECT_NAME}-infrastructure"
+STACK_NAME="${PROJECT_NAME}-stack"
 
 echo "🧹 Comprehensive AWS Infrastructure Cleanup..."
 
@@ -119,6 +119,6 @@ echo ""
 echo "🎉 Cleanup completed!"
 echo ""
 echo "📋 Next steps:"
-echo "1. Run './server/setup-aws.sh' to deploy fresh infrastructure"
+echo "1. Run './server/setup-aws-fixed.sh' to deploy fresh infrastructure"
 echo "2. The new deployment will create clean resources"
 echo ""

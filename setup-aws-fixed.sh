@@ -7,7 +7,7 @@ set -e
 
 PROJECT_NAME="fastgrapher"
 AWS_REGION="us-east-1"
-STACK_NAME="${PROJECT_NAME}-infrastructure"
+STACK_NAME="${PROJECT_NAME}-stack"
 
 echo "🚀 Setting up FastGrapher AWS Infrastructure (Fixed Version)..."
 
@@ -52,6 +52,24 @@ if [ "$STACK_STATUS" != "DOES_NOT_EXIST" ]; then
     echo "⚠️  Existing stack found in $STACK_STATUS state. Cleaning up..."
     aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION
     wait_for_stack_deletion
+fi
+
+# Also clean up the old infrastructure stack if it exists
+OLD_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name fastgrapher-infrastructure --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+if [ "$OLD_STACK_STATUS" != "DOES_NOT_EXIST" ]; then
+    echo "🧹 Cleaning up old fastgrapher-infrastructure stack..."
+    aws cloudformation delete-stack --stack-name fastgrapher-infrastructure --region $AWS_REGION
+    
+    echo "⏳ Waiting for old stack deletion to complete..."
+    while true; do
+        OLD_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name fastgrapher-infrastructure --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+        if [ "$OLD_STACK_STATUS" = "DOES_NOT_EXIST" ]; then
+            echo "✅ Old stack deletion completed"
+            break
+        fi
+        echo "   Old stack status: $OLD_STACK_STATUS"
+        sleep 30
+    done
 fi
 
 # Step 1: Deploy CloudFormation stack with ECS service desired count = 0

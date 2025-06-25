@@ -3,7 +3,7 @@
 
 PROJECT_NAME="fastgrapher"
 AWS_REGION="us-east-1"
-STACK_NAME="${PROJECT_NAME}-infrastructure"
+STACK_NAME="${PROJECT_NAME}-stack"
 
 echo "🔍 Checking CloudFormation Stack Status..."
 
@@ -60,7 +60,7 @@ elif [[ "$STACK_STATUS" =~ ^(ROLLBACK_FAILED|CREATE_FAILED|UPDATE_ROLLBACK_FAILE
     echo "aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION"
     echo ""
     echo "Then redeploy with:"
-    echo "./setup-aws.sh"
+    echo "./setup-aws-fixed.sh"
     
 elif [[ "$STACK_STATUS" =~ ^(DELETE_IN_PROGRESS)$ ]]; then
     echo ""
@@ -71,7 +71,7 @@ elif [[ "$STACK_STATUS" =~ ^(DELETE_IN_PROGRESS)$ ]]; then
 elif [[ "$STACK_STATUS" == "DOES_NOT_EXIST" ]]; then
     echo ""
     echo "✅ No stack exists. You can proceed with deployment:"
-    echo "./setup-aws.sh"
+    echo "./setup-aws-fixed.sh"
     
 else
     echo ""
