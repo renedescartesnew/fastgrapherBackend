@@ -384,7 +384,7 @@ Outputs:
     Description: HTTPS URL of the load balancer (available when SSL certificate is configured)
     Value: !Sub https://${ApplicationLoadBalancer.DNSName}
     Export:
-      Name: !Sub ${AWS::StackStack}-LoadBalancerHTTPSURL
+      Name: !Sub ${AWS::StackName}-LoadBalancerHTTPSURL
 
   SSLCertificateStatus:
     Description: SSL Certificate configuration status
