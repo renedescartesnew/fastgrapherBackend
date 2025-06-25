@@ -1,6 +1,6 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'FastGrapher Backend Infrastructure with SSL/HTTPS Support - Fixed Version'
+Description: 'FastGrapher Backend Infrastructure - Fixed Version'
 
 Parameters:
   ProjectName:
@@ -24,14 +24,6 @@ Parameters:
     Default: 'f/lXkHROS/yCC3fEGsubXkxfcWe3XnT29/CfUgV5kHs='
     Description: JWT secret for authentication
     NoEcho: true
-
-  SSLCertificateArn:
-    Type: String
-    Default: ''
-    Description: 'ARN of the SSL certificate for HTTPS (e.g., arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012). Leave empty for HTTP only.'
-
-Conditions:
-  HasSSLCertificate: !Not [!Equals [!Ref SSLCertificateArn, '']]
 
 Resources:
   # VPC
@@ -228,9 +220,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub 
-        - ${ProjectName}-alb-${UniqueId}
-        - UniqueId: !Select [2, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
+      Name: !Sub ${ProjectName}-alb
       Scheme: internet-facing
       Type: application
       SecurityGroups:
@@ -242,9 +232,7 @@ Resources:
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub 
-        - ${ProjectName}-tg-${UniqueId}
-        - UniqueId: !Select [2, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
+      Name: !Sub ${ProjectName}-tg
       Port: 8080
       Protocol: HTTP
       VpcId: !Ref VPC
@@ -268,39 +256,6 @@ Resources:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 80
       Protocol: HTTP
-
-  # HTTPS Listener - Only created when SSL certificate is provided
-  ALBListenerHTTPS:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Condition: HasSSLCertificate
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroup
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Ref SSLCertificateArn
-      SslPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
-
-  # HTTP to HTTPS Redirect Rule - Only when SSL certificate exists
-  HTTPSRedirectRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Condition: HasSSLCertificate
-    Properties:
-      Actions:
-        - Type: redirect
-          RedirectConfig:
-            Protocol: HTTPS
-            Port: '443'
-            StatusCode: HTTP_301
-      Conditions:
-        - Field: host-header
-          Values:
-            - '*'
-      ListenerArn: !Ref ALBListenerHTTP
-      Priority: 1
 
   # ECS Task Definition
   ECSTaskDefinition:
@@ -339,7 +294,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
 
-  # ECS Service - FIXED: Start with 0 desired count
+  # ECS Service - Start with 0 desired count
   ECSService:
     Type: AWS::ECS::Service
     DependsOn: ALBListenerHTTP
@@ -378,22 +333,6 @@ Outputs:
     Value: !Sub http://${ApplicationLoadBalancer.DNSName}
     Export:
       Name: !Sub ${AWS::StackName}-LoadBalancerHTTPURL
-
-  LoadBalancerHTTPSURL:
-    Condition: HasSSLCertificate
-    Description: HTTPS URL of the load balancer (available when SSL certificate is configured)
-    Value: !Sub https://${ApplicationLoadBalancer.DNSName}
-    Export:
-      Name: !Sub ${AWS::StackName}-LoadBalancerHTTPSURL
-
-  SSLCertificateStatus:
-    Description: SSL Certificate configuration status
-    Value: !If 
-      - HasSSLCertificate
-      - !Sub 'SSL Certificate configured: ${SSLCertificateArn}'
-      - 'No SSL Certificate configured - HTTP only'
-    Export:
-      Name: !Sub ${AWS::StackName}-SSLStatus
   
   ECRRepositoryURI:
     Description: ECR Repository URI
