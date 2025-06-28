@@ -1,5 +1,4 @@
 
-
 services:
   fastgrapher-backend:
     build:
@@ -37,4 +36,3 @@ services:
 networks:
   fastgrapher-network:
     driver: bridge
-
