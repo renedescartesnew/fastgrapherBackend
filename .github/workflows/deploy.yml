@@ -1,67 +1,67 @@
 
-# name: Deploy to Google Cloud Run
+name: Deploy to Google Cloud Run
 
-# on:
-#   push:
-#     branches: ["main"]
-#   workflow_dispatch:
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
 
-# permissions:
-#   contents: 'read'
-#   id-token: 'write'
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
-# env:
-#   PROJECT_ID: backend-fastgrapher
-#   SERVICE_NAME: backend-fastgrapher-service
-#   REGION: us-central1
+env:
+  PROJECT_ID: backend-fastgrapher
+  SERVICE_NAME: backend-fastgrapher-service
+  REGION: us-central1
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     timeout-minutes: 30
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - name: Authenticate to Google Cloud
-#         uses: google-github-actions/auth@v2
-#         with:
-#           credentials_json: ${{ secrets.GCP_SA_KEY }}
-#           project_id: ${{ env.PROJECT_ID }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.PROJECT_ID }}
           
-#       - name: Set up gcloud
-#         uses: google-github-actions/setup-gcloud@v2
-#         with:
-#           project_id: ${{ env.PROJECT_ID }}
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
-#       - name: Configure Docker
-#         run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-#       - name: Build and Deploy
-#         run: |-
-#           gcloud builds submit \
-#             --tag us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
-#             --project=$PROJECT_ID \
-#             --timeout=1200s
+      - name: Build and Deploy
+        run: |-
+          gcloud builds submit \
+            --tag us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --project=$PROJECT_ID \
+            --timeout=1200s
 
-#           gcloud run deploy $SERVICE_NAME \
-#             --image us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
-#             --region $REGION \
-#             --platform managed \
-#             --allow-unauthenticated \
-#             --set-env-vars NODE_ENV=production \
-#             --set-secrets=MONGO_URI=MONGO_URI:latest \
-#             --set-secrets=JWT_SECRET=JWT_SECRET:latest \
-#             --set-secrets=MAIL_HOST=MAIL_HOST:latest \
-#             --set-secrets=MAIL_PORT=MAIL_PORT:latest \
-#             --set-secrets=MAIL_SECURE=MAIL_SECURE:latest \
-#             --set-secrets=MAIL_USER=MAIL_USER:latest \
-#             --set-secrets=MAIL_PASS=MAIL_PASS:latest \
-#             --set-secrets=MAIL_FROM=MAIL_FROM:latest \
-#             --timeout=600s \
-#             --cpu=1 \
-#             --memory=1Gi \
-#             --min-instances=0 \
-#             --max-instances=5 \
-#             --concurrency=80
+          gcloud run deploy $SERVICE_NAME \
+            --image us-central1-docker.pkg.dev/$PROJECT_ID/fastgrapher-repo/fastgrapher-backend:$GITHUB_SHA \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars NODE_ENV=production \
+            --set-secrets=MONGO_URI=MONGO_URI:latest \
+            --set-secrets=JWT_SECRET=JWT_SECRET:latest \
+            --set-secrets=MAIL_HOST=MAIL_HOST:latest \
+            --set-secrets=MAIL_PORT=MAIL_PORT:latest \
+            --set-secrets=MAIL_SECURE=MAIL_SECURE:latest \
+            --set-secrets=MAIL_USER=MAIL_USER:latest \
+            --set-secrets=MAIL_PASS=MAIL_PASS:latest \
+            --set-secrets=MAIL_FROM=MAIL_FROM:latest \
+            --timeout=600s \
+            --cpu=1 \
+            --memory=1Gi \
+            --min-instances=0 \
+            --max-instances=5 \
+            --concurrency=80

@@ -1,0 +1,40 @@
+
+version: '3.8'
+
+services:
+  fastgrapher-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.hetzner
+    container_name: fastgrapher-backend
+    restart: unless-stopped
+    ports:
+      - "80:8080"
+      - "443:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - HOST=0.0.0.0
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587} 
+      - MAIL_SECURE=${MAIL_SECURE:-false}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM:-noreply@fastgrapher.com}
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+      - ./logs:/usr/src/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - fastgrapher-network
+
+networks:
+  fastgrapher-network:
+    driver: bridge

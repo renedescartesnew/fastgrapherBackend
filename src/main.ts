@@ -7,9 +7,18 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
     
-    // Enable CORS with more permissive settings
+    // Enable CORS with your frontend URLs
     app.enableCors({
-      origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'https://id-preview--14c7fd51-7c95-478e-91be-63f3152c2810.lovable.app', 'https://francemed-df379.firebaseapp.com/' ,'https://francemed-df379.web.app', 'https://www.fastgrapher.com', 'https://fastgrapher.com'],
+      origin: [
+        'http://localhost:5173', 
+        'http://localhost:3000', 
+        'http://localhost:8080', 
+        'https://id-preview--14c7fd51-7c95-478e-91be-63f3152c2810.lovable.app',
+        'https://francemed-df379.web.app', 
+        'https://www.fastgrapher.com', 
+        'https://fastgrapher.com',
+        // Add any other frontend URLs you'll use
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
@@ -26,23 +35,24 @@ async function bootstrap() {
       transform: true,
     }));
     
-    console.log('=== SERVER STARTING ===');
+    console.log('=== FASTGRAPHER SERVER STARTING ===');
     console.log('Environment:', process.env.NODE_ENV || 'development');
     console.log('Port:', process.env.PORT || 4000);
+    console.log('Host:', process.env.HOST || '0.0.0.0');
     console.log('MongoDB URI configured:', !!process.env.MONGO_URI);
     console.log('JWT Secret configured:', !!process.env.JWT_SECRET);
-    console.log('CORS origins configured');
+    console.log('CORS origins configured for production');
     console.log('Global API prefix: /api');
     console.log('Target database: fastgrapher');
-    console.log('Target collection: users');
     
     const port = process.env.PORT || 4000;
-    await app.listen(port, '0.0.0.0'); // Listen on all interfaces
+    const host = process.env.HOST || '0.0.0.0';
+    await app.listen(port, host);
     
-    console.log(`Server is running on port ${port}`);
-    console.log(`Health check available at: http://localhost:${port}/api/health`);
-    console.log(`Auth endpoints available at: http://localhost:${port}/api/auth/*`);
-    console.log('Server is ready to accept connections');
+    console.log(`🚀 FastGrapher Backend is running on http://${host}:${port}`);
+    console.log(`📋 Health check: http://${host}:${port}/api/health`);
+    console.log(`🔐 Auth endpoints: http://${host}:${port}/api/auth/*`);
+    console.log('✅ Server is ready to accept connections');
     
   } catch (error) {
     console.error('=== SERVER STARTUP FAILED ===');
