@@ -31,28 +31,7 @@ server {
         root /var/www/html;
     }
     
-    # Redirect all other HTTP traffic to HTTPS (after SSL is set up)
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
-
-# HTTPS server block (will be updated by certbot)
-server {
-    listen 443 ssl http2;
-    server_name api.fastgrapher.com;
-    
-    # Temporary SSL configuration (will be replaced by certbot)
-    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
-    ssl_private_key /etc/ssl/private/ssl-cert-snakeoil.key;
-    
-    # Security headers
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    
-    # API proxy
+    # API proxy for HTTP (temporary until HTTPS is working)
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
@@ -98,6 +77,9 @@ nginx -t
 echo "🔄 Starting nginx..."
 systemctl start nginx
 systemctl enable nginx
+
+echo "🧪 Testing HTTP first..."
+curl -f http://api.fastgrapher.com/api/health && echo "✅ HTTP is working!" || echo "⚠️ HTTP test failed"
 
 echo "🔐 Now requesting SSL certificate..."
 certbot --nginx -d api.fastgrapher.com --non-interactive --agree-tos --email admin@fastgrapher.com
