@@ -20,6 +20,7 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM:-noreply@fastgrapher.com}
+      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./uploads:/usr/src/app/uploads
       - ./logs:/usr/src/app/logs
