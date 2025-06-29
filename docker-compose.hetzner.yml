@@ -3,11 +3,11 @@ services:
   fastgrapher-backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.hetzner
     container_name: fastgrapher-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"  # Changed from 80:8080 to 8080:8080
+      - "8080:8080"  # Backend runs on port 8080, nginx proxies from port 80
     environment:
       - NODE_ENV=production
       - PORT=8080
