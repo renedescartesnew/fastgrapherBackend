@@ -3,7 +3,7 @@ services:
   fastgrapher-backend:
     build:
       context: .
-      dockerfile: Dockerfile.hetzner
+      dockerfile: Dockerfile
     container_name: fastgrapher-backend
     restart: unless-stopped
     ports:
@@ -15,12 +15,12 @@ services:
       - MONGO_URI=${MONGO_URI}
       - JWT_SECRET=${JWT_SECRET}
       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
-      - MAIL_PORT=${MAIL_PORT:-587} 
+      - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_SECURE=${MAIL_SECURE:-false}
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM:-noreply@fastgrapher.com}
-      - FRONTEND_URL=${FRONTEND_URL}
+      - FRONTEND_URL=${FRONTEND_URL:-https://www.fastgrapher.com}
     volumes:
       - ./uploads:/usr/src/app/uploads
       - ./logs:/usr/src/app/logs
