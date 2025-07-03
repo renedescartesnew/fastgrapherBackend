@@ -1,0 +1,35 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Deploy to Hetzner
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: 37.27.2.53
+        username: root
+        key: ${{ secrets.HETZNER_SSH_KEY }}
+        script: |
+          cd /var/www/fastgrapherBackend
+          git pull origin main
+          npm ci --production
+          pm2 restart fastgrapherBackend
