@@ -29,9 +29,11 @@ jobs:
           echo "Configuring Git safe directory..."
           git config --global --add safe.directory /opt/fastgrapher
           
-          # Pull latest changes
-          echo "Pulling latest changes from GitHub..."
-          git pull origin main || { echo "Git pull failed"; exit 1; }
+          # Pull latest changes and reset to match remote exactly
+          echo "Fetching latest changes from GitHub..."
+          git fetch origin main || { echo "Git fetch failed"; exit 1; }
+          echo "Resetting to match remote repository..."
+          git reset --hard origin/main || { echo "Git reset failed"; exit 1; }
           
           # Stop and remove existing containers
           echo "Stopping existing containers..."
