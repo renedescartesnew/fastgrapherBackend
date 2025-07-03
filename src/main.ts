@@ -20,12 +20,19 @@ async function bootstrap() {
           'https://fastgrapher.com',
         ];
         
+        console.log('CORS Request from origin:', origin);
+        
         // Allow requests with no origin (mobile apps, curl, etc.)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+          console.log('No origin - allowing request');
+          return callback(null, true);
+        }
         
         if (allowedOrigins.includes(origin)) {
+          console.log('Origin allowed:', origin);
           return callback(null, true);
         } else {
+          console.log('Origin NOT allowed:', origin);
           return callback(new Error('Not allowed by CORS'));
         }
       },
