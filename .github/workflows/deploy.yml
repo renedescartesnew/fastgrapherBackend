@@ -25,6 +25,10 @@ jobs:
           # Navigate to application directory
           cd /opt/fastgrapher || { echo "Application directory not found"; exit 1; }
           
+          # Configure Git safe directory
+          echo "Configuring Git safe directory..."
+          git config --global --add safe.directory /opt/fastgrapher
+          
           # Pull latest changes
           echo "Pulling latest changes from GitHub..."
           git pull origin main || { echo "Git pull failed"; exit 1; }
