@@ -40,7 +40,7 @@ apt install -y nginx
 cat > /etc/nginx/sites-available/fastgrapher << 'EOF'
 server {
     listen 80;
-    server_name 37.27.2.53;
+    server_name 37.27.2.53 api.fastgrapher.com;
 
     location / {
         proxy_pass http://localhost:8080;
@@ -55,6 +55,9 @@ server {
         proxy_connect_timeout 300;
         proxy_send_timeout 300;
         proxy_read_timeout 300;
+        
+        # DO NOT add CORS headers here - let NestJS handle CORS
+        # This prevents duplicate CORS headers
     }
 }
 EOF
