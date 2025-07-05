@@ -112,6 +112,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req) {
-    return this.authService.getCurrentUser(req.user.sub);
+    console.log('Profile request - user object:', req.user);
+    console.log('User ID (_id):', req.user._id);
+    return this.authService.getCurrentUser(req.user._id);
   }
 }
