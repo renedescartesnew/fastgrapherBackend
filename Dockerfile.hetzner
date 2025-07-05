@@ -26,9 +26,13 @@ RUN npm prune --production && npm cache clean --force
 # Production stage
 FROM node:20-bullseye-slim
 
-# Install curl for health checks
+# Install runtime dependencies for TensorFlow.js Node and health checks
 RUN apt-get update && apt-get install -y \
     curl \
+    libc6-dev \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
